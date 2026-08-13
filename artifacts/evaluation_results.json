@@ -1,0 +1,158 @@
+[
+  {
+    "scenario": "Scenario A: Optimal / Healthy Baseline Profile",
+    "description": "High sleep quality, regular social engagement, low screen idle time, normal heart rate & HRV.",
+    "predicted_class": "Healthy",
+    "probabilities": {
+      "Healthy": 0.9929,
+      "Mild_Stress": 0.0066,
+      "Moderate_Stress": 0.0002,
+      "Severe_Stress": 0.0004
+    },
+    "regression": {
+      "depression_score": 0.21,
+      "anxiety_score": 0.19,
+      "stress_score": 0.29
+    },
+    "top_risk_factors": [
+      {
+        "feature_name": "Skin_Temperature",
+        "importance_score": 0.010200000368058681,
+        "direction": "neutral"
+      },
+      {
+        "feature_name": "GSR_Level",
+        "importance_score": 0.007899999618530273,
+        "direction": "neutral"
+      },
+      {
+        "feature_name": "MFCC_Variance",
+        "importance_score": 0.007799999788403511,
+        "direction": "neutral"
+      },
+      {
+        "feature_name": "Facial_Emotion_Variance",
+        "importance_score": -0.007600000128149986,
+        "direction": "neutral"
+      }
+    ],
+    "narrative": "Patient presents with low overall psychological distress (Depression: 0.21/34, Anxiety: 0.19/24, Stress: 0.29/39). Severity classified as Healthy."
+  },
+  {
+    "scenario": "Scenario B: Mild Work Stress & Fatigue Profile",
+    "description": "Moderate sleep disruption, elevated daily screen time, slightly increased GSR and heart rate.",
+    "predicted_class": "Mild_Stress",
+    "probabilities": {
+      "Healthy": 0.3616,
+      "Mild_Stress": 0.6377,
+      "Moderate_Stress": 0.0005,
+      "Severe_Stress": 0.0002
+    },
+    "regression": {
+      "depression_score": 4.16,
+      "anxiety_score": 3.12,
+      "stress_score": 4.87
+    },
+    "top_risk_factors": [
+      {
+        "feature_name": "Daily_App_Usage_Min",
+        "importance_score": 10.844400405883789,
+        "direction": "risk_factor"
+      },
+      {
+        "feature_name": "Eye_Blink_Rate",
+        "importance_score": 10.744400024414062,
+        "direction": "risk_factor"
+      },
+      {
+        "feature_name": "MFCC_Variance",
+        "importance_score": -9.601099967956543,
+        "direction": "protective_factor"
+      },
+      {
+        "feature_name": "Smile_Intensity",
+        "importance_score": 9.434800148010254,
+        "direction": "risk_factor"
+      }
+    ],
+    "narrative": "Patient exhibits mild psychological strain (Depression: 4.16/34, Anxiety: 3.12/24, Stress: 4.87/39). Early lifestyle interventions recommended."
+  },
+  {
+    "scenario": "Scenario C: Moderate Depressive Affect Profile",
+    "description": "Low sleep quality, reduced social engagement, prolonged idle screen time, reduced facial expressivity and low HRV.",
+    "predicted_class": "Mild_Stress",
+    "probabilities": {
+      "Healthy": 0.0027,
+      "Mild_Stress": 0.9782,
+      "Moderate_Stress": 0.0191,
+      "Severe_Stress": 0.0001
+    },
+    "regression": {
+      "depression_score": 8.82,
+      "anxiety_score": 6.12,
+      "stress_score": 9.75
+    },
+    "top_risk_factors": [
+      {
+        "feature_name": "MFCC_Variance",
+        "importance_score": -22.39929962158203,
+        "direction": "protective_factor"
+      },
+      {
+        "feature_name": "Pitch_Mean",
+        "importance_score": -18.613100051879883,
+        "direction": "protective_factor"
+      },
+      {
+        "feature_name": "MFCC_Mean",
+        "importance_score": -17.534700393676758,
+        "direction": "protective_factor"
+      },
+      {
+        "feature_name": "Head_Motion_Index",
+        "importance_score": -12.376299858093262,
+        "direction": "protective_factor"
+      }
+    ],
+    "narrative": "Patient exhibits mild psychological strain (Depression: 8.82/34, Anxiety: 6.12/24, Stress: 9.75/39). Early lifestyle interventions recommended."
+  },
+  {
+    "scenario": "Scenario D: Severe Crisis & High Agitation Profile",
+    "description": "Severe insomnia, severe social withdrawal, high screen usage, flat affect, high heart rate, suppressed HRV, high GSR.",
+    "predicted_class": "Moderate_Stress",
+    "probabilities": {
+      "Healthy": 0.0001,
+      "Mild_Stress": 0.0037,
+      "Moderate_Stress": 0.9602,
+      "Severe_Stress": 0.0361
+    },
+    "regression": {
+      "depression_score": 17.03,
+      "anxiety_score": 11.64,
+      "stress_score": 18.73
+    },
+    "top_risk_factors": [
+      {
+        "feature_name": "GSR_Level",
+        "importance_score": 25.615400314331055,
+        "direction": "risk_factor"
+      },
+      {
+        "feature_name": "Daily_App_Usage_Min",
+        "importance_score": 12.210200309753418,
+        "direction": "risk_factor"
+      },
+      {
+        "feature_name": "Eye_Blink_Rate",
+        "importance_score": 2.6486001014709473,
+        "direction": "risk_factor"
+      },
+      {
+        "feature_name": "HRV_Index",
+        "importance_score": 2.210700035095215,
+        "direction": "risk_factor"
+      }
+    ],
+    "narrative": "Patient demonstrates moderate symptoms of distress (Depression: 17.03/34, Anxiety: 11.64/24, Stress: 18.73/39). Clinical evaluation & stress management indicated."
+  }
+]
