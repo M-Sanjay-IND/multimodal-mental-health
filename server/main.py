@@ -134,9 +134,30 @@ def predict_payload(payload: EvaluationPayload) -> EvaluationResponse:
     else:
         scaled_tabular = np.array(raw_tabular, dtype=np.float32)
 
-    # 2. Build Tensors
-    v_tensor = torch.from_numpy(np.array([payload.visual_vector.values], dtype=np.float32))
-    a_tensor = torch.from_numpy(np.array([payload.acoustic_vector.values], dtype=np.float32))
+    # 2. Build Tensors with fallback vector derivation to prevent zero-collapse
+    v_vals = np.array(payload.visual_vector.values, dtype=np.float32)
+    a_vals = np.array(payload.acoustic_vector.values, dtype=np.float32)
+
+    if np.all(v_vals == 0) or np.all(a_vals == 0):
+        v_synth = np.zeros(128, dtype=np.float32)
+        v_synth[0::4] = raw_tabular[6]
+        v_synth[1::4] = (raw_tabular[7] - 15.0) / 30.0
+        v_synth[2::4] = raw_tabular[8]
+        v_synth[3::4] = raw_tabular[9]
+
+        a_synth = np.zeros(256, dtype=np.float32)
+        a_synth[0::4] = raw_tabular[10]
+        a_synth[1::4] = raw_tabular[11]
+        a_synth[2::4] = (raw_tabular[12] - 180.0) / 100.0
+        a_synth[3::4] = (raw_tabular[13] - 3.2) / 2.0
+
+        if np.all(v_vals == 0):
+            v_vals = v_synth
+        if np.all(a_vals == 0):
+            a_vals = a_synth
+
+    v_tensor = torch.from_numpy(np.array([v_vals], dtype=np.float32))
+    a_tensor = torch.from_numpy(np.array([a_vals], dtype=np.float32))
     t_tensor = torch.from_numpy(np.array([scaled_tabular], dtype=np.float32))
 
     # 3. Model Forward Pass

@@ -15,9 +15,9 @@ from xai.shap_explainer import FastSHAPExplainer
 from xai.narrative_engine import ClinicalNarrativeEngine
 from schemas.payload import ClassificationOutput, RegressionOutput
 
-# Page Configuration - Minimalist Dark/Light Research Dashboard
+# Page Configuration - Minimalist Dark Research Workspace
 st.set_page_config(
-    page_title="DCMF-Net Model Research Interface",
+    page_title="DCMF-Net Model Research Workspace",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -56,14 +56,33 @@ def load_model_and_preprocessor():
 
     return base_model, preprocessor, explainer, narrative_engine, epoch, val_loss
 
+def derive_multimodal_vectors(raw_tabular):
+    """
+    Synthesizes 128D visual and 256D acoustic latent embeddings from raw tabular biomarker parameters
+    when live camera/mic streams are unprovided, preventing fusion layer collapse to zero.
+    """
+    v_base = np.zeros(128, dtype=np.float32)
+    v_base[0::4] = raw_tabular[6]   # Facial_Emotion_Variance
+    v_base[1::4] = (raw_tabular[7] - 15.0) / 30.0  # Eye_Blink_Rate
+    v_base[2::4] = raw_tabular[8]   # Smile_Intensity
+    v_base[3::4] = raw_tabular[9]   # Head_Motion_Index
+
+    a_base = np.zeros(256, dtype=np.float32)
+    a_base[0::4] = raw_tabular[10]  # MFCC_Mean
+    a_base[1::4] = raw_tabular[11]  # MFCC_Variance
+    a_base[2::4] = (raw_tabular[12] - 180.0) / 100.0  # Pitch_Mean
+    a_base[3::4] = (raw_tabular[13] - 3.2) / 2.0      # Speech_Rate
+
+    return v_base, a_base
+
 # Load PyTorch Model & Preprocessor
 model, preprocessor, explainer, narrative_engine, epoch, val_loss = load_model_and_preprocessor()
 
 # Header Title
 st.title("🧠 DCMF-Net Model Research & Evaluation Workspace")
-st.caption("Direct PyTorch Model Inference, FastSHAP Attributions, and Multi-Task Clinical Evaluation")
+st.caption("Direct PyTorch Model Forward Pass, Multimodal Transformer Fusion, and FastSHAP Attributions")
 
-# System Status Info
+# System Status Metrics
 col_s1, col_s2, col_s3, col_s4 = st.columns(4)
 with col_s1:
     st.metric("Model Architecture", "DCMF-Net Transformer")
@@ -76,12 +95,11 @@ with col_s4:
 
 st.divider()
 
-# Sidebar: Preset Selectors & Controls
-st.sidebar.header("🔬 Scenario Presets")
+# Sidebar: Scenario Selector
+st.sidebar.header("🔬 Clinical Benchmark Presets")
 preset = st.sidebar.selectbox(
-    "Load Clinical Benchmark Preset:",
+    "Load Clinical Scenario:",
     [
-        "Custom Inputs",
         "Optimal Healthy Baseline",
         "Mild Work Stress & Fatigue",
         "Moderate Depressive Affect",
@@ -89,7 +107,6 @@ preset = st.sidebar.selectbox(
     ]
 )
 
-# Preset Values Dictionary
 PRESETS = {
     "Optimal Healthy Baseline": [4.5, 4.5, 110.0, 65.0, 4.0, 10.0, 0.65, 15.0, 0.75, 0.35, 0.2, 1.8, 195.0, 3.5, 68.0, 75.0, 36.6, 0.8],
     "Mild Work Stress & Fatigue": [3.0, 3.2, 250.0, 50.0, 8.0, 25.0, 0.40, 22.0, 0.45, 0.25, -0.1, 1.1, 175.0, 2.8, 78.0, 52.0, 36.5, 2.4],
@@ -97,9 +114,9 @@ PRESETS = {
     "Severe Crisis & Agitation": [1.0, 1.0, 580.0, 20.0, 18.0, 90.0, 0.05, 42.0, 0.05, 0.05, -1.6, 0.2, 120.0, 1.4, 115.0, 16.0, 35.8, 8.5],
 }
 
-default_vals = PRESETS.get(preset, [3.5, 4.0, 150.0, 55.0, 6.0, 15.0, 0.45, 18.0, 0.65, 0.25, 0.15, 1.2, 180.0, 3.2, 72.0, 65.0, 36.6, 1.4])
+default_vals = PRESETS[preset]
 
-# Main Layout: 2 Columns (Left: 18 Feature Inputs, Right: PyTorch Model Output)
+# Main Columns
 left_col, right_col = st.columns([7, 5])
 
 with left_col:
@@ -143,16 +160,20 @@ with left_col:
 # Extract raw list of 18 features in order
 raw_tabular = [feature_inputs[name] for name in TABULAR_FEATURE_NAMES]
 
-# Process through Preprocessor & PyTorch Model
+# Transform via Preprocessor
 if preprocessor:
     scaled_tabular = preprocessor.transform([raw_tabular])[0]
 else:
     scaled_tabular = np.array(raw_tabular, dtype=np.float32)
 
-v_tensor = torch.zeros(1, 128)
-a_tensor = torch.zeros(1, 256)
+# Synthesize Visual & Acoustic Vectors to prevent modality collapse
+v_synth, a_synth = derive_multimodal_vectors(raw_tabular)
+
+v_tensor = torch.from_numpy(np.array([v_synth], dtype=np.float32))
+a_tensor = torch.from_numpy(np.array([a_synth], dtype=np.float32))
 t_tensor = torch.from_numpy(np.array([scaled_tabular], dtype=np.float32))
 
+# PyTorch Model Forward Pass
 t0 = time.perf_counter()
 with torch.no_grad():
     logits, reg_scores, attn_dict = model(v_tensor, a_tensor, t_tensor)
@@ -178,19 +199,25 @@ with right_col:
     st.caption(f"Forward Pass Latency: {latency_ms:.2f} ms | FastSHAP: {shap_latency:.2f} ms")
 
     # Predicted Class Banner
-    class_colors = {
-        "Healthy": "🟢 Healthy",
+    class_labels = {
+        "Healthy": "🟢 Healthy Baseline",
         "Mild_Stress": "🟡 Mild Stress",
         "Moderate_Stress": "🟧 Moderate Stress",
         "Severe_Stress": "🔴 Severe Stress",
     }
-    st.info(f"**Predicted Severity Classification**: `{class_colors.get(pred_cls_name, pred_cls_name)}`")
+    
+    if pred_cls_name == "Healthy":
+        st.success(f"**Predicted Severity Classification**: `{class_labels[pred_cls_name]}`")
+    elif pred_cls_name == "Mild_Stress":
+        st.warning(f"**Predicted Severity Classification**: `{class_labels[pred_cls_name]}`")
+    else:
+        st.error(f"**Predicted Severity Classification**: `{class_labels[pred_cls_name]}`")
 
     # Softmax Probabilities Bar Chart
     st.markdown("#### Softmax Class Probabilities")
     df_probs = pd.DataFrame({
         "Class": SEVERITY_CLASSES,
-        "Probability": [prob_dict[c] for c in SEVERITY_CLASSES]
+        "Probability (%)": [round(prob_dict[c] * 100, 2) for c in SEVERITY_CLASSES]
     })
     st.bar_chart(df_probs.set_index("Class"), height=180)
 
@@ -207,11 +234,11 @@ with right_col:
     # FastSHAP Feature Impact
     st.markdown("#### FastSHAP Feature Attributions (Top 6)")
     df_shap = pd.DataFrame([
-        {"Feature": item.feature_name, "Shapley Value": item.importance_score}
+        {"Feature": item.feature_name.replace("_", " "), "Shapley Impact": f"{'+' if item.importance_score > 0 else ''}{item.importance_score:.2f}"}
         for item in attributions_list[:6]
     ])
     st.dataframe(df_shap, use_container_width=True, hide_index=True)
 
     # Clinical Narrative Summary
     st.markdown("#### Clinical Narrative Synthesis")
-    st.success(narrative_payload.summary)
+    st.info(narrative_payload.summary)
