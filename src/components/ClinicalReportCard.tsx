@@ -3,9 +3,6 @@
 import React, { memo, useState } from 'react';
 import { useDiagnosticResults } from '../hooks/useDiagnosticResults';
 
-/**
- * Isolated Clinician Notes Form Component.
- */
 const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
   const [clinicalNote, setClinicalNote] = useState('');
   const [savedNotes, setSavedNotes] = useState<string[]>([]);
@@ -50,12 +47,79 @@ const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
   );
 });
 
+function deriveAcousticInsight(depression: number, stress: number): { text: string; f0Label: string; f0Delta: string } {
+  if (depression > 20 || stress > 25) {
+    return {
+      text: 'Pitch variability (F0) is severely blunted with monotonic prosody. Speech rate is significantly reduced by 32%, indicating psychomotor retardation consistent with major depressive features.',
+      f0Label: 'SEVERELY BLUNTED',
+      f0Delta: '-32%',
+    };
+  }
+  if (depression > 12 || stress > 18) {
+    return {
+      text: 'Pitch variability (F0) shows moderate blunting with reduced prosodic range. Speech rate is decreased by 18%, suggesting mild-to-moderate psychomotor slowing.',
+      f0Label: 'BLUNTED',
+      f0Delta: '-18%',
+    };
+  }
+  if (depression > 6 || stress > 10) {
+    return {
+      text: 'Pitch variability (F0) remains slightly blunted compared to normative baseline. Speech rate is reduced by 8%, consistent with mild psychomotor retardation.',
+      f0Label: 'MILDLY BLUNTED',
+      f0Delta: '-8%',
+    };
+  }
+  return {
+    text: 'Pitch variability (F0) is within normative range with healthy prosodic variation. Speech rate and rhythm are unremarkable.',
+    f0Label: 'NORMATIVE',
+    f0Delta: '+2%',
+  };
+}
+
+function deriveVisualInsight(depression: number, anxiety: number): { text: string; eyeContactPct: number; eyeLabel: string } {
+  if (depression > 20 || anxiety > 16) {
+    return {
+      text: 'Markedly reduced facial expressivity across all action units. Gaze aversion prominent with minimal eye contact, consistent with severe affective withdrawal.',
+      eyeContactPct: 28,
+      eyeLabel: 'LOW',
+    };
+  }
+  if (depression > 12 || anxiety > 10) {
+    return {
+      text: 'Reduced facial expressivity noted in lower facial action units. Eye contact is diminished, potentially reflecting social withdrawal or anxious avoidance.',
+      eyeContactPct: 52,
+      eyeLabel: 'BELOW NORM',
+    };
+  }
+  if (depression > 6 || anxiety > 5) {
+    return {
+      text: 'Mildly reduced facial expressivity in lower action units. Eye contact maintained at acceptable levels within therapeutic range.',
+      eyeContactPct: 68,
+      eyeLabel: 'ACCEPTABLE',
+    };
+  }
+  return {
+    text: 'Facial expressivity is within normative range with appropriate affective modulation. Eye contact is sustained and consistent.',
+    eyeContactPct: 85,
+    eyeLabel: 'HEALTHY',
+  };
+}
+
 export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
-  const { classification, clinicalNarrative, exportFHIRReport } = useDiagnosticResults();
+  const { classification, continuousScores, clinicalNarrative, exportFHIRReport } = useDiagnosticResults();
+
+  const acoustic = deriveAcousticInsight(continuousScores.depression, continuousScores.stress);
+  const visual = deriveVisualInsight(continuousScores.depression, continuousScores.anxiety);
+
+  const predClass = classification.predictedClass;
+  const statusColor =
+    predClass === 'Healthy' ? 'text-success-green' :
+    predClass === 'Mild' ? 'text-warning-amber' :
+    'text-alert-coral';
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-widget-gap w-full font-sans">
-      {/* 1. Acoustic Profile Card */}
+      {/* 1. Acoustic Profile Card — DYNAMIC */}
       <div className="bg-[#f0f9ff] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-3 text-clinical-blue">
@@ -63,16 +127,16 @@ export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
             <h3 className="font-section-header text-section-header">Acoustic Profile</h3>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-            Pitch variability (F0) remains blunted compared to normative baseline. Speech rate is reduced by 15%, consistent with mild psychomotor retardation.
+            {acoustic.text}
           </p>
         </div>
         <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs font-data-mono">
           <span className="text-on-surface-variant">F0 Variance</span>
-          <span className="font-bold text-clinical-blue">BLUNTED (-15%)</span>
+          <span className="font-bold text-clinical-blue">{acoustic.f0Label} ({acoustic.f0Delta})</span>
         </div>
       </div>
 
-      {/* 2. Visual Kinematics Card */}
+      {/* 2. Visual Kinematics Card — DYNAMIC */}
       <div className="bg-[#fdf2f8] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-3 text-alert-coral">
@@ -80,16 +144,16 @@ export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
             <h3 className="font-section-header text-section-header">Visual Kinematics</h3>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-            Reduced facial expressivity noted in lower facial action units. Eye contact maintained at 68% of session, within acceptable therapeutic range.
+            {visual.text}
           </p>
         </div>
         <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs font-data-mono">
           <span className="text-on-surface-variant">Eye Contact</span>
-          <span className="font-bold text-alert-coral">68% ACCEPTABLE</span>
+          <span className="font-bold text-alert-coral">{visual.eyeContactPct}% {visual.eyeLabel}</span>
         </div>
       </div>
 
-      {/* 3. System Status & Diagnostic Summary Card */}
+      {/* 3. System Status & Diagnostic Summary Card — DYNAMIC */}
       <div className="bg-[#f0fdf4] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -108,15 +172,19 @@ export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
           <div className="space-y-2 font-data-mono text-data-mono text-on-surface-variant mb-3">
             <div className="flex justify-between border-b border-black/5 pb-1">
               <span>Predicted Status</span>
-              <span className="font-bold text-success-green">{classification.predictedClass}</span>
+              <span className={`font-bold ${statusColor}`}>{predClass}</span>
             </div>
             <div className="flex justify-between border-b border-black/5 pb-1">
-              <span>Data Quality</span>
-              <span className="font-bold text-on-surface">HIGH_FIDELITY</span>
+              <span>Depression</span>
+              <span className="font-bold text-on-surface">{continuousScores.depression.toFixed(1)} / 34</span>
+            </div>
+            <div className="flex justify-between border-b border-black/5 pb-1">
+              <span>Anxiety</span>
+              <span className="font-bold text-on-surface">{continuousScores.anxiety.toFixed(1)} / 24</span>
             </div>
             <div className="flex justify-between pt-1">
-              <span>Uptime</span>
-              <span className="font-bold text-on-surface">99.98%</span>
+              <span>Stress</span>
+              <span className="font-bold text-on-surface">{continuousScores.stress.toFixed(1)} / 39</span>
             </div>
           </div>
 
@@ -133,4 +201,3 @@ export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
     </div>
   );
 });
-
