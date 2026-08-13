@@ -23,10 +23,12 @@ def generate_synthetic_embeddings(
     v_dim: int = 128,
     a_dim: int = 256,
     seed: int = 42,
+    artifact_dir: str = "artifacts",
 ):
     """
-    Generates synthetic visual (128-dim) and acoustic (256-dim) embeddings
-    correlated with target mental health status severity classes using conditioned Gaussian distributions.
+    Generates visual (128-dim) and acoustic (256-dim) embeddings by sampling from real extracted
+    media feature pools (from datasets/Extracted_images and datasets/Audios) when available,
+    augmented with correlated Gaussian distributions.
     """
     rng = np.random.default_rng(seed)
     n_samples = len(target_classes)
@@ -34,15 +36,32 @@ def generate_synthetic_embeddings(
     v_embeddings = np.zeros((n_samples, v_dim), dtype=np.float32)
     a_embeddings = np.zeros((n_samples, a_dim), dtype=np.float32)
 
-    for i, cls_idx in enumerate(target_classes):
-        # Class-specific mean shift and scale to simulate realistic cross-modal correlations
-        cls_factor = (cls_idx - 1.5) * 0.25
+    v_pool_path = os.path.join(artifact_dir, "real_visual_embeddings.joblib")
+    a_pool_path = os.path.join(artifact_dir, "real_acoustic_embeddings.joblib")
 
-        v_mean = np.linspace(-0.2, 0.2, v_dim) + cls_factor
-        v_embeddings[i] = rng.normal(loc=v_mean, scale=0.8, size=v_dim)
+    real_v_pools = joblib.load(v_pool_path) if os.path.exists(v_pool_path) else None
+    real_a_pools = joblib.load(a_pool_path) if os.path.exists(a_pool_path) else None
 
-        a_mean = np.sin(np.linspace(0, 2 * np.pi, a_dim)) * 0.3 + cls_factor
-        a_embeddings[i] = rng.normal(loc=a_mean, scale=0.9, size=a_dim)
+    if real_v_pools is not None and real_a_pools is not None:
+        print("[INFO] Sampling visual and acoustic embeddings from REAL media feature pools...")
+        for i, cls_idx in enumerate(target_classes):
+            v_pool = real_v_pools[cls_idx]
+            a_pool = real_a_pools[cls_idx]
+
+            v_sample = v_pool[rng.integers(0, len(v_pool))]
+            a_sample = a_pool[rng.integers(0, len(a_pool))]
+
+            v_embeddings[i] = v_sample + rng.normal(loc=0.0, scale=0.05, size=v_dim).astype(np.float32)
+            a_embeddings[i] = a_sample + rng.normal(loc=0.0, scale=0.05, size=a_dim).astype(np.float32)
+    else:
+        print("[INFO] Real media pools not found; fallback to synthetic Gaussian distributions...")
+        for i, cls_idx in enumerate(target_classes):
+            cls_factor = (cls_idx - 1.5) * 0.25
+            v_mean = np.linspace(-0.2, 0.2, v_dim) + cls_factor
+            v_embeddings[i] = rng.normal(loc=v_mean, scale=0.8, size=v_dim)
+
+            a_mean = np.sin(np.linspace(0, 2 * np.pi, a_dim)) * 0.3 + cls_factor
+            a_embeddings[i] = rng.normal(loc=a_mean, scale=0.9, size=a_dim)
 
     return v_embeddings, a_embeddings
 
