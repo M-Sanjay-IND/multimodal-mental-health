@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #0A0A0C;
+    --surface: #121216;
+    --surface-dim: #12131a;
+    --surface-variant: #33343c;
+    --surface-container-high: #282a31;
+    --border: #1E1E24;
+    --text-primary: #E4E4E7;
+    --text-secondary: #A1A1AA;
+    --on-surface: #e2e1eb;
+    --clinical-green: #00FF66;
+    --alert-crimson: #FF3366;
+    --warning-amber: #FFB800;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--on-surface);
+    font-family: var(--font-geist), system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+.data-mono {
+  font-family: var(--font-jetbrains-mono), monospace;
+}
+
+.font-metric-label {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.font-badge-label {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.font-metric-display {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.font-headline-sm {
+  font-family: var(--font-geist), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.font-headline-lg {
+  font-family: var(--font-geist), sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.font-report-body {
+  font-family: var(--font-geist), sans-serif;
+  font-size: 14px;
+}
+
+/* Glow Utilities from Stitch */
+.hud-glow {
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+}
+
+.hud-glow-amber {
+  box-shadow: 0 0 10px rgba(255, 184, 0, 0.2);
+}
+
+.hud-glow-crimson {
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.2);
+}
+
+/* Progress bar transitions */
+.progress-bar-fill {
+  transition: width 1.5s linear;
+}
+
+.progress-bar-reset {
+  transition: none;
+  width: 0%;
+}
+
+/* Custom Cyberpunk Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0C;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E1E24;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00FF66;
+}
