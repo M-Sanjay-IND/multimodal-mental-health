@@ -36,7 +36,8 @@ def load_server_artifacts():
     global MODEL, PREPROCESSOR
     artifact_dir = "artifacts"
     prep_path = os.path.join(artifact_dir, "preprocessor.joblib")
-    model_path = os.path.join(artifact_dir, "model_state.pt")
+    model_int8_path = os.path.join(artifact_dir, "model_int8.pt")
+    fp32_path = os.path.join(artifact_dir, "model_state.pt")
 
     logger.info("Loading preprocessor and model state artifacts...")
 
@@ -46,13 +47,20 @@ def load_server_artifacts():
     else:
         logger.warning(f"Preprocessor artifact not found at {prep_path}!")
 
-    MODEL = MultiTaskModel()
-    if os.path.exists(model_path):
-        checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
+    base_model = MultiTaskModel()
+    if os.path.exists(model_int8_path):
+        checkpoint = torch.load(model_int8_path, map_location="cpu", weights_only=False)
+        MODEL = torch.ao.quantization.quantize_dynamic(base_model, {torch.nn.Linear}, dtype=torch.qint8)
         MODEL.load_state_dict(checkpoint["model_state_dict"])
-        logger.info(f"Loaded model weights from {model_path}")
+        logger.info(f"Loaded INT8 quantized model weights from {model_int8_path}")
+    elif os.path.exists(fp32_path):
+        checkpoint = torch.load(fp32_path, map_location="cpu", weights_only=False)
+        MODEL = base_model
+        MODEL.load_state_dict(checkpoint["model_state_dict"])
+        logger.info(f"Loaded FP32 model weights from {fp32_path}")
     else:
-        logger.warning(f"Model checkpoint not found at {model_path}! Using uninitialized weights.")
+        MODEL = base_model
+        logger.warning("No checkpoint found! Using default uninitialized weights.")
 
     MODEL.eval()
 
