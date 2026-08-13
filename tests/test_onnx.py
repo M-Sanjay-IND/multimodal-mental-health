@@ -8,6 +8,7 @@ import torch.ao.quantization
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from models.multi_task import MultiTaskModel
+from training.dataset import MultimodalParquetDataset
 
 
 def test_quantized_checkpoint_exists_and_size():
@@ -69,9 +70,14 @@ def test_numerical_parity():
     int8_model.load_state_dict(int8_ckpt["model_state_dict"])
     int8_model.eval()
 
-    v_in = torch.randn(4, 128)
-    a_in = torch.randn(4, 256)
-    t_in = torch.randn(4, 18)
+    # Load sample from test dataset for realistic evaluation
+    test_ds = MultimodalParquetDataset(os.path.join("data", "test.parquet"))
+    sample_loader = torch.utils.data.DataLoader(test_ds, batch_size=4, shuffle=False)
+    batch = next(iter(sample_loader))
+
+    v_in = batch["visual"]
+    a_in = batch["acoustic"]
+    t_in = batch["tabular"]
 
     with torch.no_grad():
         fp32_logits, fp32_reg, _ = fp32_model(v_in, a_in, t_in)

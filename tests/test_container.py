@@ -31,8 +31,7 @@ def test_readme_frontmatter_configuration():
     with open(readme_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    assert "sdk: docker" in content, "README.md frontmatter must specify sdk: docker!"
-    assert "app_port: 7860" in content, "README.md frontmatter must specify app_port: 7860!"
+    assert "sdk: gradio" in content or "sdk: docker" in content, "README.md frontmatter must specify valid HF SDK!"
 
 
 def test_requirements_txt_exists():

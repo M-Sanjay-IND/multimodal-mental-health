@@ -25,7 +25,7 @@ def train_model(
     device: str = "cpu",
 ):
     os.makedirs(artifact_dir, exist_ok=True)
-    print(f"[INFO] Training MultiTaskModel on {device.upper()} for {epochs} epochs...")
+    print(f"[INFO] Training MultiTaskModel on {device.upper()} for {epochs} epochs...", flush=True)
 
     train_loader, val_loader = create_dataloaders(train_path, val_path, batch_size=batch_size)
 
@@ -118,7 +118,8 @@ def train_model(
             f"Acc: {acc*100:.1f}% | "
             f"Macro F1: {macro_f1:.3f} | "
             f"MAEs (Dep/Anx/Str): [{mae_dep:.2f}, {mae_anx:.2f}, {mae_str:.2f}] | "
-            f"R2: {r2_overall:.3f}"
+            f"R2: {r2_overall:.3f}",
+            flush=True,
         )
 
         if val_total < best_val_loss:

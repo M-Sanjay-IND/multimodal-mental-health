@@ -53,23 +53,27 @@ class MultiTaskLoss(nn.Module):
 
     def forward(self, logits: torch.Tensor, reg_scores: torch.Tensor, target_cls: torch.Tensor, target_reg: torch.Tensor):
         loss_cls = self.focal_loss(logits, target_cls)
-        loss_reg = self.smooth_l1(reg_scores, target_reg)
+        loss_reg = 2.5 * self.smooth_l1(reg_scores, target_reg)
 
         return loss_cls, loss_reg
 
 
 class GradNormLossBalancer(nn.Module):
     """
-    GradNorm Dynamic Loss Balancer.
-    Dynamically balances loss weights w_cls and w_reg based on gradient magnitudes.
+    Dynamic Homoscedastic Uncertainty Loss Balancer (Kendall et al.).
+    Dynamically balances classification and regression task losses:
+    L_total = exp(-s_cls) * L_cls + s_cls + exp(-s_reg) * L_reg + s_reg
+    where s_cls and s_reg are learnable log variance parameters.
     """
 
     def __init__(self, alpha: float = 0.12):
         super().__init__()
         self.alpha = alpha
-        self.w_cls = nn.Parameter(torch.ones(1, dtype=torch.float32))
-        self.w_reg = nn.Parameter(torch.ones(1, dtype=torch.float32))
+        self.log_var_cls = nn.Parameter(torch.zeros(1, dtype=torch.float32))
+        self.log_var_reg = nn.Parameter(torch.zeros(1, dtype=torch.float32))
 
     def get_weighted_loss(self, loss_cls: torch.Tensor, loss_reg: torch.Tensor):
-        total_loss = self.w_cls * loss_cls + self.w_reg * loss_reg
+        precision_cls = torch.exp(-self.log_var_cls)
+        precision_reg = torch.exp(-self.log_var_reg)
+        total_loss = precision_cls * loss_cls + self.log_var_cls + precision_reg * loss_reg + self.log_var_reg
         return total_loss

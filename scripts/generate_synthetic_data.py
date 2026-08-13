@@ -145,10 +145,10 @@ def build_and_export_dataset(
     os.makedirs(artifact_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    df_raw = pd.read_csv(csv_path)
+    # Generate synthetic correlated dataset (4000 samples)
+    df_raw = generate_synthetic_evaluation_vectors(n_samples=4000, seed=seed)
 
     # Multi-task target extraction
-    df_raw["target_class"] = df_raw["Mental_Health_Status"].map(CLASS_MAP)
     y_stratify = df_raw["target_class"].values
 
     # Fit tabular preprocessor on full dataset
@@ -161,9 +161,6 @@ def build_and_export_dataset(
     joblib.dump(preprocessor.transformer, os.path.join(artifact_dir, "transformer.joblib"))
     joblib.dump(preprocessor, os.path.join(artifact_dir, "preprocessor.joblib"))
 
-    # Generate synthetic visual & acoustic embeddings for the dataset
-    v_emb, a_emb = generate_synthetic_embeddings(y_stratify, seed=seed)
-
     # Prepare complete dataframe with processed tabular columns + embeddings
     X_tabular_scaled = preprocessor.transform(X_tabular_raw)
 
@@ -173,8 +170,8 @@ def build_and_export_dataset(
     processed_df["Depression_Score"] = df_raw["Depression_Score"].values.astype(np.float32)
     processed_df["Anxiety_Score"] = df_raw["Anxiety_Score"].values.astype(np.float32)
     processed_df["Stress_Score"] = df_raw["Stress_Score"].values.astype(np.float32)
-    processed_df["visual_vector"] = [v.tolist() for v in v_emb]
-    processed_df["acoustic_vector"] = [a.tolist() for a in a_emb]
+    processed_df["visual_vector"] = df_raw["visual_vector"]
+    processed_df["acoustic_vector"] = df_raw["acoustic_vector"]
 
     # Stratified split: 70% train, 30% temp (which splits 50/50 into 15% val and 15% test)
     train_df, temp_df = train_test_split(

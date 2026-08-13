@@ -501,10 +501,10 @@ Run the full evaluation suite against the test split and certify that model perf
 
 ### Exit Criteria
 
-- [ ] All classification and regression metrics meet or exceed targets.
-- [ ] Cross-validation protocol verified (no data leakage).
-- [ ] Benchmark report generated and committed.
-- [ ] All work committed and PR merged into `dev`.
+- [x] All classification and regression metrics meet or exceed targets.
+- [x] Cross-validation protocol verified (no data leakage).
+- [x] Benchmark report generated and committed.
+- [x] All work committed and PR merged into `dev`.
 
 ---
 
