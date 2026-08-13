@@ -1,8 +1,8 @@
 ---
-title: Multimodal Psychiatric Evaluation & Severity Estimation API
+title: MindScan — Multimodal Mental Health Assessment
 emoji: 🧠
-colorFrom: blue
-colorTo: indigo
+colorFrom: indigo
+colorTo: blue
 sdk: gradio
 sdk_version: 4.44.0
 app_file: app.py
@@ -11,14 +11,15 @@ license: mit
 hardware: cpu-basic
 ---
 
-# 🧠 Multimodal Psychiatric Evaluation & Severity Estimation Engine (DCMF-Net)
+# 🧠 MindScan — Multimodal Psychiatric Evaluation & Severity Estimation Engine (DCMF-Net)
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com/)
+[![Gradio](https://img.shields.io/badge/Gradio-4.44%2B-orange.svg)](https://gradio.app/)
+[![HF Spaces](https://img.shields.io/badge/🤗%20Spaces-Free%20CPU-yellow.svg)](https://huggingface.co/spaces)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An end-to-end clinical-grade AI platform integrating **Dynamic Cross-Modal Attention Fusion (DCMF-Net)**, **FastSHAP Explainable AI (XAI)**, and a zero-hallucination **Clinical Narrative Engine** for real-time mental health assessment across visual facials, speech acoustics, and mobile biometrics.
+An end-to-end clinical-grade AI platform integrating **Dynamic Cross-Modal Attention Fusion (DCMF-Net)**, **FastSHAP Explainable AI (XAI)**, and a zero-hallucination **Clinical Narrative Engine** for real-time mental health assessment across visual, acoustic, and mobile biometric streams.
 
 ---
 
@@ -34,76 +35,109 @@ graph TD
     P2 --> DCMF
     P3 --> DCMF
 
-    DCMF --> Trunk[Shared Neural Trunk 768 to 256]
-    
-    Trunk --> ClsHead[Classification Head - 4 Severity Classes]
-    Trunk --> RegHead[Regression Head - Dep/Anx/Str Scores]
-    
+    DCMF --> Trunk[Shared Neural Trunk 768 → 256]
+
+    Trunk --> ClsHead[Classification Head — 4 Severity Classes]
+    Trunk --> RegHead[Regression Head — Depression / Anxiety / Stress Scores]
+
     ClsHead --> FastSHAP[FastSHAP Feature Attribution Engine]
     RegHead --> FastSHAP
-    
+
     FastSHAP --> Narrative[Deterministic Clinical Narrative Engine]
-    Narrative --> Gateway[Async FastAPI Gateway REST / WebSocket]
+    Narrative --> UI[Gradio Interactive UI — HF Spaces]
 ```
 
 ---
 
 ## ✨ Key Features
 
-- **Multimodal Fusion Engine (`DCMF-Net`)**: 4-Head Bi-Directional Cross-Attention mechanism uniting facial expressions, vocal prosody, and smartphone biometrics.
-- **Dynamic INT8 Model Quantization**: Compressed model footprint from 7.20 MB to **1.86 MB (74.2% reduction)** with ultra-fast **2.99ms CPU inference**.
-- **Real-Time Async Gateway**: FastAPI streaming WebSocket (`/evaluate/ws`) & REST (`/evaluate/rest`) API.
-- **FastSHAP Explainable AI**: Sub-15ms feature attribution computing risk-elevating vs protective factor metrics.
-- **Zero-Hallucination Clinical Narrative**: Deterministic template engine generating clinical summaries, risk factors, and actionable recommendations.
-- **$0.00/Month Serverless Containerization**: Optimized Docker SDK build ready for deployment on Hugging Face Spaces.
+| Feature | Detail |
+|---------|--------|
+| **DCMF-Net** | 4-Head Bi-Directional Cross-Attention uniting facial, vocal, and biometric streams |
+| **INT8 Quantization** | 1.86 MB model — 74.2% footprint reduction from FP32 (7.2 MB) |
+| **CPU Latency** | 2.99 ms inference on free HF Spaces CPU tier |
+| **FastSHAP XAI** | Sub-15ms feature attribution identifying risk-elevating vs protective signals |
+| **Clinical Narrative** | Deterministic template engine — zero LLM hallucination risk |
+| **Free Hosting** | Gradio SDK on Hugging Face Spaces free CPU-basic tier — $0/month |
 
 ---
 
-## 📊 Dataset Schema & Multimodal Inputs
+## 📊 Multimodal Input Schema
 
-| Modality | Features | Dimensions | Source / Pipeline |
-|----------|----------|------------|-------------------|
-| **Visual** | Facial Emotion Variance, Smile Intensity, Eye Blink Rate, Head Motion | 128-D | Mediapipe / OpenCV Feature Embeddings |
-| **Acoustic** | Pitch Mean, Speech Rate, MFCC Means & Variances | 256-D | Librosa Speech Prosody Extraction |
-| **Tabular & Biometrics** | Sleep Quality, Social Engagement, Typing WPM, HRV Index, GSR Level | 18 Features | Robust Scaled & Yeo-Johnson Transformed |
+| Modality | Features | Dimensions | Source |
+|----------|----------|------------|--------|
+| **Visual** | Facial emotion variance, smile intensity, eye blink rate, head motion | 128-D | MediaPipe / OpenCV |
+| **Acoustic** | Pitch mean, speech rate, MFCC means & variances | 256-D | Librosa prosody extraction |
+| **Tabular / Biometrics** | Sleep quality, social engagement, HRV, GSR, PHQ/GAD screening | 18 features | Robust scaled & Yeo-Johnson transformed |
 
 ---
 
-## 🚀 Quick Start & Local Execution
+## 🧪 Severity Classification Schema
 
-### 1. Installation
+| Class | PHQ-9 Depression | GAD-7 Anxiety | PSS Stress |
+|-------|-----------------|---------------|------------|
+| **Minimal** | ≤ 9 | ≤ 7 | ≤ 14 |
+| **Mild** | 10–13 | 8–9 | 15–18 |
+| **Moderate** | 14–20 | 10–14 | 19–25 |
+| **Severe** | ≥ 21 | ≥ 15 | ≥ 26 |
+
+---
+
+## 🚀 Local Development
+
+### 1. Clone & Install
 ```bash
 git clone https://github.com/M-Sanjay-IND/multimodal-mental-health.git
 cd multimodal-mental-health
 pip install -r requirements.txt
 ```
 
-### 2. Run the Gateway Server
+### 2. Run Gradio App Locally
+```bash
+python app.py
+# Opens at http://localhost:7860
+```
+
+### 3. Run Backend Server (optional — for REST/WebSocket API)
 ```bash
 python server/main.py
+# Swagger UI: http://localhost:8000/docs
+# WebSocket:  ws://localhost:8000/evaluate/ws
 ```
-- Interactive API Documentation (Swagger UI): `http://localhost:8000/docs`
-- Health Diagnostic Check: `http://localhost:8000/health`
-- Real-time WebSocket Endpoint: `ws://localhost:8000/evaluate/ws`
 
-### 3. Run Test Suite
+### 4. Run Test Suite
 ```bash
 pytest
 ```
 
 ---
 
-## 🐳 Docker & Hugging Face Spaces Deployment
+## 📁 Repository Structure
 
-### Build Docker Image Locally
-```bash
-docker build -t multimodal-mental-health:latest .
-docker run -p 7860:7860 multimodal-mental-health:latest
 ```
-
-### Deploy to Hugging Face Spaces
-```bash
-python scripts/deploy_hf.py --space-id "your-username/multimodal-mental-health"
+multimodal-mental-health/
+├── app.py                    # Gradio HF Spaces entrypoint
+├── server/
+│   └── main.py               # FastAPI REST + WebSocket gateway (local dev)
+├── models/
+│   ├── dcmf_net.py           # DCMF-Net cross-modal attention transformer
+│   ├── attention.py          # MARG gating attention modules
+│   └── multi_task.py         # Multi-task classification + regression heads
+├── training/
+│   ├── trainer.py            # Training loop with GradNorm loss balancing
+│   ├── losses.py             # AsymmetricFocalLoss, MultiTaskLoss, GradNorm
+│   └── dataset.py            # Parquet dataset loader
+├── xai/
+│   ├── shap_explainer.py     # FastSHAP surrogate attribution network
+│   └── narrative_engine.py   # Deterministic clinical narrative generator
+├── schemas/
+│   └── payload.py            # Pydantic v2 request / response schemas
+├── artifacts/
+│   ├── model_int8.pt         # INT8 quantized model (1.86 MB)
+│   ├── model_state.pt        # FP32 baseline checkpoint (7.2 MB)
+│   └── preprocessor.joblib   # Fitted tabular scaler + transformer
+├── tests/                    # pytest test suite (20+ tests)
+└── mds/Phases.md             # Phase-by-phase implementation spec
 ```
 
 ---
@@ -111,3 +145,5 @@ python scripts/deploy_hf.py --space-id "your-username/multimodal-mental-health"
 ## 📜 License
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
+
+> ⚠️ **Disclaimer**: This system is for research and hackathon demonstration purposes only. It is **not a substitute for professional clinical diagnosis or mental health treatment.**
