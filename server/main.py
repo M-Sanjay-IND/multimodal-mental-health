@@ -1,0 +1,250 @@
+import os
+import sys
+import json
+import logging
+import joblib
+import numpy as np
+import torch
+import torch.nn.functional as F
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from schemas.payload import (
+    EvaluationPayload,
+    EvaluationResponse,
+    ClassificationOutput,
+    RegressionOutput,
+    SEVERITY_CLASSES,
+    TABULAR_FEATURE_NAMES,
+    SHAPAttribution,
+    XaiPayload,
+)
+from models.multi_task import MultiTaskModel
+from xai.shap_explainer import FastSHAPExplainer
+from xai.narrative_engine import ClinicalNarrativeEngine
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("server.main")
+
+# Global model, preprocessor, and XAI references
+MODEL = None
+PREPROCESSOR = None
+EXPLAINER = None
+NARRATIVE_ENGINE = None
+
+
+def load_server_artifacts():
+    global MODEL, PREPROCESSOR, EXPLAINER, NARRATIVE_ENGINE
+    artifact_dir = "artifacts"
+    prep_path = os.path.join(artifact_dir, "preprocessor.joblib")
+    model_int8_path = os.path.join(artifact_dir, "model_int8.pt")
+    fp32_path = os.path.join(artifact_dir, "model_state.pt")
+
+    logger.info("Loading preprocessor, model state, and XAI engines...")
+
+    EXPLAINER = FastSHAPExplainer()
+    NARRATIVE_ENGINE = ClinicalNarrativeEngine()
+
+    if os.path.exists(prep_path):
+        PREPROCESSOR = joblib.load(prep_path)
+        logger.info(f"Loaded preprocessor from {prep_path}")
+    else:
+        logger.warning(f"Preprocessor artifact not found at {prep_path}!")
+
+    base_model = MultiTaskModel()
+    if os.path.exists(model_int8_path):
+        checkpoint = torch.load(model_int8_path, map_location="cpu", weights_only=False)
+        MODEL = torch.ao.quantization.quantize_dynamic(base_model, {torch.nn.Linear}, dtype=torch.qint8)
+        MODEL.load_state_dict(checkpoint["model_state_dict"])
+        logger.info(f"Loaded INT8 quantized model weights from {model_int8_path}")
+    elif os.path.exists(fp32_path):
+        checkpoint = torch.load(fp32_path, map_location="cpu", weights_only=False)
+        MODEL = base_model
+        MODEL.load_state_dict(checkpoint["model_state_dict"])
+        logger.info(f"Loaded FP32 model weights from {fp32_path}")
+    else:
+        MODEL = base_model
+        logger.warning("No checkpoint found! Using default uninitialized weights.")
+
+    MODEL.eval()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_server_artifacts()
+    yield
+
+
+app = FastAPI(
+    title="Multimodal Psychiatric Evaluation & Severity Estimation API",
+    description="Real-Time Async Gateway for DCMF-Net Multimodal Mental Health Assessment",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def read_root():
+    return {
+        "service": "Multimodal Psychiatric Evaluation Gateway",
+        "status": "online",
+        "health_check": "/health",
+        "websocket_endpoint": "/evaluate/ws",
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "model_loaded": MODEL is not None,
+        "preprocessor_loaded": PREPROCESSOR is not None,
+        "explainer_loaded": EXPLAINER is not None,
+        "narrative_engine_loaded": NARRATIVE_ENGINE is not None,
+        "version": "1.0.0",
+    }
+
+
+def predict_payload(payload: EvaluationPayload) -> EvaluationResponse:
+    global MODEL, PREPROCESSOR, EXPLAINER, NARRATIVE_ENGINE
+
+    if MODEL is None:
+        raise RuntimeError("Model is not loaded!")
+
+    # 1. Extract raw tabular values and scale
+    raw_tabular = payload.tabular.values
+    if PREPROCESSOR is not None:
+        scaled_tabular = PREPROCESSOR.transform([raw_tabular])[0]
+    else:
+        scaled_tabular = np.array(raw_tabular, dtype=np.float32)
+
+    # 2. Build Tensors
+    v_tensor = torch.from_numpy(np.array([payload.visual_vector.values], dtype=np.float32))
+    a_tensor = torch.from_numpy(np.array([payload.acoustic_vector.values], dtype=np.float32))
+    t_tensor = torch.from_numpy(np.array([scaled_tabular], dtype=np.float32))
+
+    # 3. Model Forward Pass
+    with torch.no_grad():
+        logits, reg_scores, attn_dict = MODEL(v_tensor, a_tensor, t_tensor)
+
+        probs = F.softmax(logits, dim=-1)[0].numpy().tolist()
+        pred_cls_id = int(torch.argmax(logits, dim=-1)[0].item())
+        pred_cls_name = SEVERITY_CLASSES[pred_cls_id]
+
+        reg_vals = reg_scores[0].numpy().tolist()
+
+    prob_dict = {cls_name: float(round(p, 4)) for cls_name, p in zip(SEVERITY_CLASSES, probs)}
+
+    cls_output = ClassificationOutput(
+        predicted_class=pred_cls_name,
+        predicted_class_id=pred_cls_id,
+        probabilities=prob_dict,
+    )
+
+    reg_output = RegressionOutput(
+        depression_score=float(round(reg_vals[0], 2)),
+        anxiety_score=float(round(reg_vals[1], 2)),
+        stress_score=float(round(reg_vals[2], 2)),
+    )
+
+    # 4. FastSHAP Feature Attributions
+    if EXPLAINER is None:
+        EXPLAINER = FastSHAPExplainer()
+    attributions_list, attributions_dict, _ = EXPLAINER.explain(MODEL, v_tensor, a_tensor, scaled_tabular)
+
+    # 5. Clinical Narrative Generation
+    if NARRATIVE_ENGINE is None:
+        NARRATIVE_ENGINE = ClinicalNarrativeEngine()
+    narrative_payload = NARRATIVE_ENGINE.generate_narrative(cls_output, reg_output, attributions_list, attn_dict)
+
+    def _parse_weight(k: str, default: float) -> float:
+        val = attn_dict.get(k)
+        if val is None:
+            return default
+        if isinstance(val, torch.Tensor):
+            return float(round(val.mean().item(), 4))
+        try:
+            return float(round(val, 4))
+        except Exception:
+            return default
+
+    attn_weights = {
+        "visual": _parse_weight("weights_vt", 0.33),
+        "acoustic": _parse_weight("weights_at", 0.33),
+        "tabular": _parse_weight("weights_ta", 0.34),
+    }
+
+    xai_payload = XaiPayload(
+        attributions=attributions_list,
+        narrative=narrative_payload,
+        cross_attention_weights=attn_weights,
+    )
+
+    response = EvaluationResponse(
+        status="success",
+        classification=cls_output,
+        regression=reg_output,
+        shap_attribution=SHAPAttribution(attributions=attributions_dict),
+        narrative=narrative_payload.summary,
+        xai=xai_payload,
+    )
+
+    return response
+
+
+@app.post("/evaluate/rest", response_model=EvaluationResponse)
+def evaluate_rest(payload: EvaluationPayload):
+    try:
+        return predict_payload(payload)
+    except Exception as e:
+        logger.error(f"Error in REST evaluation: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@app.websocket("/evaluate/ws")
+async def evaluate_websocket(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("WebSocket connection accepted.")
+
+    try:
+        while True:
+            raw_text = await websocket.receive_text()
+            try:
+                # Parse JSON string into Pydantic model
+                payload_data = json.loads(raw_text)
+                payload = EvaluationPayload.model_validate(payload_data)
+
+                # Run inference
+                response = predict_payload(payload)
+
+                # Send back response JSON string
+                await websocket.send_text(response.model_dump_json())
+
+            except (ValidationError, json.JSONDecodeError) as ve:
+                err_response = {"status": "error", "error_type": "validation_error", "details": str(ve)}
+                await websocket.send_text(json.dumps(err_response))
+            except Exception as ex:
+                err_response = {"status": "error", "error_type": "inference_error", "details": str(ex)}
+                await websocket.send_text(json.dumps(err_response))
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket connection disconnected.")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("server.main:app", host="0.0.0.0", port=8000, reload=True)
