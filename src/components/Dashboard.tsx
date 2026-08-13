@@ -8,6 +8,7 @@ import { FastSHAPChart } from './FastSHAPChart';
 import { FacialSaliencyOverlay } from './FacialSaliencyOverlay';
 import { ClinicalReportCard } from './ClinicalReportCard';
 import { BaselineCalibrationModal } from './BaselineCalibrationModal';
+import { DataUploadModal } from './DataUploadModal';
 import { useDiagnosticResults } from '../hooks/useDiagnosticResults';
 import { useMediaPipeFaceMesh } from '../hooks/useMediaPipeFaceMesh';
 import { useAudioProcessor } from '../hooks/useAudioProcessor';
@@ -15,6 +16,8 @@ import { useAudioProcessor } from '../hooks/useAudioProcessor';
 export const Dashboard: React.FC = function Dashboard() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   const {
     connectWebSocket,
@@ -40,6 +43,7 @@ export const Dashboard: React.FC = function Dashboard() {
    * Toggle Session Stream Trigger.
    */
   const handleSessionToggle = useCallback(async () => {
+    setMediaError(null);
     if (!isSessionActive) {
       try {
         setIsSessionActive(true);
@@ -48,6 +52,7 @@ export const Dashboard: React.FC = function Dashboard() {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           const videoStream = await navigator.mediaDevices.getUserMedia({
             video: { width: 640, height: 360, frameRate: 30 },
+            audio: false,
           });
 
           if (videoRef.current) {
@@ -62,8 +67,12 @@ export const Dashboard: React.FC = function Dashboard() {
         updateModalityStatus('visual', 'active');
         updateModalityStatus('acoustic', 'active');
         updateModalityStatus('tabular', 'active');
-      } catch {
-        // Exception handling for camera/mic permissions
+      } catch (err: any) {
+        setMediaError(
+          err?.message || 'Camera or Microphone access was denied. You can also upload media files or tabular data inputs.'
+        );
+        updateModalityStatus('visual', 'degraded');
+        updateModalityStatus('acoustic', 'degraded');
       }
     } else {
       setIsSessionActive(false);
@@ -89,6 +98,31 @@ export const Dashboard: React.FC = function Dashboard() {
     updateModalityStatus,
   ]);
 
+  const handleVideoFileLoaded = useCallback(
+    async (file: File) => {
+      setMediaError(null);
+      setIsSessionActive(true);
+      connectWebSocket();
+
+      if (videoRef.current) {
+        if (videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach((track) => track.stop());
+          videoRef.current.srcObject = null;
+        }
+        videoRef.current.src = URL.createObjectURL(file);
+        videoRef.current.loop = true;
+        await videoRef.current.play();
+      }
+
+      await startExtraction();
+      updateModalityStatus('visual', 'active');
+      updateModalityStatus('acoustic', 'active');
+      updateModalityStatus('tabular', 'active');
+    },
+    [connectWebSocket, startExtraction, updateModalityStatus]
+  );
+
   return (
     <div className="flex h-screen overflow-hidden bg-background text-on-background w-full">
       {/* 15-Second Baseline Calibration Modal */}
@@ -98,13 +132,24 @@ export const Dashboard: React.FC = function Dashboard() {
         onCancel={cancelBaselineCalibration}
       />
 
+      {/* Data Upload & Multimodal Input Modal */}
+      <DataUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onVideoFileLoaded={handleVideoFileLoaded}
+      />
+
       {/* SideNavBar Navigation */}
       <Sidebar onSessionToggle={handleSessionToggle} isSessionActive={isSessionActive} />
 
       {/* Main Content Area */}
       <div className="flex-1 ml-0 md:ml-nav-width flex flex-col h-full bg-background relative overflow-hidden">
         {/* TopNavBar Header */}
-        <Header onSessionToggle={handleSessionToggle} isSessionActive={isSessionActive} />
+        <Header
+          onSessionToggle={handleSessionToggle}
+          isSessionActive={isSessionActive}
+          onUploadClick={() => setIsUploadModalOpen(true)}
+        />
 
         {/* Dashboard Content */}
         <main className="flex-1 mt-top-bar-height p-container-padding overflow-y-auto w-full">
@@ -113,13 +158,37 @@ export const Dashboard: React.FC = function Dashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="font-section-header text-section-header text-on-surface">
-                  Session 42A - Active Monitoring
+                  Session 42A - Multimodal Assessment
                 </h1>
                 <p className="font-body-md text-body-md text-on-surface-variant">
-                  Patient ID: 884-291-B
+                  Patient ID: 884-291-B • Real-time Diagnostic Pipeline
                 </p>
               </div>
+
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="px-4 py-2 bg-clinical-blue hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">upload</span>
+                Upload Files / Data Inputs
+              </button>
             </div>
+
+            {/* Media Permission Warning Banner if blocked */}
+            {mediaError && (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-amber-600">warning</span>
+                  <span>{mediaError}</span>
+                </div>
+                <button
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="font-bold underline text-clinical-blue cursor-pointer"
+                >
+                  Upload Files Instead
+                </button>
+              </div>
+            )}
 
             {/* Bento Grid Layout */}
             <div className="grid grid-cols-12 gap-widget-gap">
@@ -145,4 +214,5 @@ export const Dashboard: React.FC = function Dashboard() {
     </div>
   );
 };
+
 

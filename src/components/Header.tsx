@@ -6,11 +6,13 @@ import { useDiagnosticResults } from '../hooks/useDiagnosticResults';
 export interface HeaderProps {
   onSessionToggle?: () => void;
   isSessionActive?: boolean;
+  onUploadClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = memo(function Header({
   onSessionToggle,
   isSessionActive = false,
+  onUploadClick,
 }) {
   const { modalityStatus, payloadLatencyMs } = useDiagnosticResults();
 
@@ -81,6 +83,16 @@ export const Header: React.FC<HeaderProps> = memo(function Header({
 
         {/* Action Controls & Session Toggle */}
         <div className="flex items-center gap-3 border-l border-outline-variant pl-4 ml-1">
+          {onUploadClick && (
+            <button
+              onClick={onUploadClick}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold font-data-label tracking-wide transition-all cursor-pointer flex items-center gap-1.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[16px] text-clinical-blue">cloud_upload</span>
+              Upload Data
+            </button>
+          )}
+
           {onSessionToggle && (
             <button
               onClick={onSessionToggle}
