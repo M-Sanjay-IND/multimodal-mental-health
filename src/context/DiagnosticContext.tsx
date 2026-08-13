@@ -393,9 +393,8 @@ export const DiagnosticProvider: React.FC<DiagnosticProviderProps> = ({
 
         if (response.ok) {
           const rawData = await response.json();
-          const parsed = wsServiceRef.current
-            ? (await import('../services/websocket')).normalizeBackendResponse(rawData)
-            : null;
+          const { normalizeBackendResponse } = await import('../services/websocket');
+          const parsed = normalizeBackendResponse(rawData);
 
           if (parsed) {
             handleIncomingResponse(parsed);
