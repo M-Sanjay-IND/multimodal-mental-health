@@ -164,10 +164,7 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
     setIsLoading(true);
     setErrorMessage(null);
 
-    // Build exact 18-dim tabular vector from form values
     const tabularValues = FEATURE_DEFINITIONS.map((f) => formData[f.key] ?? f.defaultVal);
-
-    // Neutral 128D visual and 256D acoustic vectors for tabular-first inference
     const visualValues = new Array(128).fill(0.0);
     const acousticValues = new Array(256).fill(0.0);
 
@@ -178,7 +175,6 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
     };
 
     try {
-      // 1. Direct REST call to PyTorch model server
       const res = await fetch('http://localhost:8000/evaluate/rest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -192,7 +188,6 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
       const data = await res.json();
       setModelResponse(data);
 
-      // 2. Also inject into central DiagnosticContext so global state updates
       await injectUploadedPayload({
         tabularVector: tabularValues,
         visualVector: visualValues,
@@ -215,23 +210,23 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
   ] as const;
 
   return (
-    <div className="space-y-8 w-full font-sans">
+    <div className="space-y-6 w-full font-sans text-white">
       {/* Top Banner */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mono-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-lg font-bold uppercase tracking-wider text-white">
             Model Value Input Form
           </h2>
-          <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Directly input value parameters into the 18 feature slots of the PyTorch DCMF-Net model. Submitting sends the raw tabular payload directly to the model endpoint for inference.
+          <p className="text-xs text-zinc-400 mt-1 max-w-xl">
+            Input custom parameters into the 18 feature slots of the PyTorch DCMF-Net model. Submitting sends the raw tabular payload directly to the model endpoint for inference.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 font-mono text-xs">
           <select
             value={selectedPreset}
             onChange={(e) => handlePresetSelect(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+            className="px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-300 focus:outline-none cursor-pointer"
           >
             <option value="">Load Preset Values...</option>
             {Object.keys(PRESETS).map((p) => (
@@ -244,15 +239,15 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
           <button
             onClick={() => handleSubmit()}
             disabled={isLoading}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-50"
+            className="px-5 py-2 bg-white hover:bg-zinc-200 text-black rounded-lg font-bold transition-all cursor-pointer disabled:opacity-50"
           >
-            {isLoading ? 'Running Model...' : 'Submit Values to Model'}
+            {isLoading ? 'Processing...' : 'Submit to Model'}
           </button>
         </div>
       </div>
 
       {errorMessage && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-medium">
+        <div className="p-4 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded-lg text-xs font-mono">
           {errorMessage}
         </div>
       )}
@@ -263,18 +258,18 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
           {categories.map((cat) => {
             const features = FEATURE_DEFINITIONS.filter((f) => f.category === cat);
             return (
-              <div key={cat} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
+              <div key={cat} className="mono-card p-5 space-y-4">
+                <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider border-b border-zinc-800 pb-2">
                   {cat}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {features.map((f) => {
                     const currentVal = formData[f.key] ?? f.defaultVal;
                     return (
-                      <div key={f.key} className="space-y-1.5">
+                      <div key={f.key} className="space-y-1 font-mono">
                         <div className="flex justify-between items-center text-xs">
-                          <label className="font-semibold text-slate-700">{f.label}</label>
-                          <span className="text-[10px] text-slate-400 font-mono">[{f.unit}]</span>
+                          <label className="text-zinc-300 font-medium">{f.label}</label>
+                          <span className="text-[10px] text-zinc-500">[{f.unit}]</span>
                         </div>
                         <input
                           type="number"
@@ -283,11 +278,8 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
                           step={f.step}
                           value={currentVal}
                           onChange={(e) => handleInputChange(f.key, e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-zinc-500 focus:outline-none transition-all"
                         />
-                        <p className="text-[10px] text-slate-400 italic leading-tight">
-                          {f.description}
-                        </p>
                       </div>
                     );
                   })}
@@ -299,40 +291,40 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+            className="w-full py-3 bg-white hover:bg-zinc-200 text-black font-bold text-xs rounded-lg transition-all cursor-pointer disabled:opacity-50 uppercase tracking-wider font-mono"
           >
-            {isLoading ? 'Processing Model Forward Pass...' : 'Run PyTorch DCMF-Net Inference'}
+            {isLoading ? 'Processing Forward Pass...' : 'Run PyTorch DCMF-Net Inference'}
           </button>
         </div>
 
         {/* Model Output Results Panel (Col 5) */}
         <div className="lg:col-span-5">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 sticky top-6">
-            <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+          <div className="mono-card p-6 space-y-6 sticky top-6 font-mono text-xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200 border-b border-zinc-800 pb-3 flex items-center justify-between">
               <span>Model Inference Output</span>
               {modelResponse && (
-                <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-semibold">
-                  REST HTTP 200 OK
+                <span className="text-[10px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                  HTTP 200 OK
                 </span>
               )}
             </h3>
 
             {!modelResponse ? (
-              <div className="text-center py-12 text-slate-400 text-xs space-y-2">
-                <div className="font-semibold text-slate-500">No output generated yet</div>
-                <p>Fill out the input values or select a preset and click "Submit Values to Model".</p>
+              <div className="text-center py-12 text-zinc-500 text-xs space-y-2">
+                <div className="font-semibold text-zinc-400">No output generated yet</div>
+                <p>Fill out input values or load a preset and click "Submit to Model".</p>
               </div>
             ) : (
-              <div className="space-y-6 text-xs">
+              <div className="space-y-5">
                 {/* 1. Classification Output */}
                 <div className="space-y-3">
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                     Categorical Classification
                   </div>
 
-                  <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <span className="font-medium text-slate-700">Predicted Severity Class</span>
-                    <span className="font-bold font-mono text-sm px-3 py-1 bg-blue-600 text-white rounded-lg">
+                  <div className="flex items-center justify-between bg-zinc-900 p-3 rounded-lg border border-zinc-800">
+                    <span className="text-zinc-400">Predicted Severity Class</span>
+                    <span className="font-bold text-sm px-3 py-1 bg-white text-black rounded font-mono">
                       {modelResponse.classification?.predicted_class || 'Healthy'}
                     </span>
                   </div>
@@ -340,18 +332,18 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
                   {/* Class Probabilities Bars */}
                   {modelResponse.classification?.probabilities && (
                     <div className="space-y-2 pt-1">
-                      <div className="text-[10px] font-bold text-slate-500">Softmax Probabilities:</div>
+                      <div className="text-[10px] font-bold text-zinc-500">Softmax Probabilities:</div>
                       {Object.entries(modelResponse.classification.probabilities).map(([clsName, prob]: [string, any]) => {
                         const pct = Math.round(prob * 100);
                         return (
                           <div key={clsName} className="space-y-1">
-                            <div className="flex justify-between text-[11px] font-mono text-slate-600">
+                            <div className="flex justify-between text-[11px] text-zinc-400">
                               <span>{clsName}</span>
-                              <span>{pct}%</span>
+                              <span className="text-white font-bold">{pct}%</span>
                             </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
                               <div
-                                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                className="h-full bg-white rounded-full transition-all duration-500"
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
@@ -364,33 +356,33 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
 
                 {/* 2. Regression Symptom Scores */}
                 {modelResponse.regression && (
-                  <div className="space-y-3 border-t border-slate-100 pt-4">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Continuous Symptom Regression
+                  <div className="space-y-3 border-t border-zinc-800 pt-4">
+                    <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                      Continuous Symptom Scores
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center font-mono">
-                      <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">
-                        <span className="text-[10px] text-emerald-700 block font-semibold">Depression</span>
-                        <span className="text-sm font-bold text-emerald-900">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-zinc-900 p-2.5 rounded-lg border border-zinc-800">
+                        <span className="text-[10px] text-zinc-500 block">Depression</span>
+                        <span className="text-sm font-bold text-white block mt-0.5">
                           {modelResponse.regression.depression_score}
                         </span>
-                        <span className="text-[9px] text-emerald-600 block">/ 34</span>
+                        <span className="text-[9px] text-zinc-600 block">/ 34</span>
                       </div>
 
-                      <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-100">
-                        <span className="text-[10px] text-amber-700 block font-semibold">Anxiety</span>
-                        <span className="text-sm font-bold text-amber-900">
+                      <div className="bg-zinc-900 p-2.5 rounded-lg border border-zinc-800">
+                        <span className="text-[10px] text-zinc-500 block">Anxiety</span>
+                        <span className="text-sm font-bold text-white block mt-0.5">
                           {modelResponse.regression.anxiety_score}
                         </span>
-                        <span className="text-[9px] text-amber-600 block">/ 24</span>
+                        <span className="text-[9px] text-zinc-600 block">/ 24</span>
                       </div>
 
-                      <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-100">
-                        <span className="text-[10px] text-rose-700 block font-semibold">Stress</span>
-                        <span className="text-sm font-bold text-rose-900">
+                      <div className="bg-zinc-900 p-2.5 rounded-lg border border-zinc-800">
+                        <span className="text-[10px] text-zinc-500 block">Stress</span>
+                        <span className="text-sm font-bold text-white block mt-0.5">
                           {modelResponse.regression.stress_score}
                         </span>
-                        <span className="text-[9px] text-rose-600 block">/ 39</span>
+                        <span className="text-[9px] text-zinc-600 block">/ 39</span>
                       </div>
                     </div>
                   </div>
@@ -398,19 +390,19 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
 
                 {/* 3. FastSHAP Feature Attributions */}
                 {modelResponse.shap_attribution?.attributions && (
-                  <div className="border-t border-slate-100 pt-4 space-y-2">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-t border-zinc-800 pt-4 space-y-2">
+                    <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                       FastSHAP Feature Impact
                     </div>
-                    <div className="space-y-1.5 font-mono text-[11px]">
+                    <div className="space-y-1.5 text-[11px]">
                       {Object.entries(modelResponse.shap_attribution.attributions)
-                        .slice(0, 6)
+                        .slice(0, 5)
                         .map(([featName, val]: [string, any]) => {
                           const isRisk = val > 0;
                           return (
-                            <div key={featName} className="flex justify-between items-center bg-slate-50 px-2.5 py-1.5 rounded border border-slate-100">
-                              <span className="text-slate-700 font-sans">{featName.replace(/_/g, ' ')}</span>
-                              <span className={`font-bold ${isRisk ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            <div key={featName} className="flex justify-between items-center bg-zinc-900 px-2.5 py-1.5 rounded border border-zinc-800">
+                              <span className="text-zinc-400">{featName.replace(/_/g, ' ')}</span>
+                              <span className="font-bold text-white">
                                 {isRisk ? `+${val}` : val}
                               </span>
                             </div>
@@ -422,11 +414,11 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
 
                 {/* 4. Clinical Narrative */}
                 {modelResponse.narrative && (
-                  <div className="border-t border-slate-100 pt-4 space-y-1.5">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-t border-zinc-800 pt-4 space-y-1.5">
+                    <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                       Clinical Narrative Synthesis
                     </div>
-                    <p className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs leading-relaxed font-sans">
+                    <p className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 text-xs leading-relaxed font-sans">
                       {modelResponse.narrative}
                     </p>
                   </div>

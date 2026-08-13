@@ -8,11 +8,10 @@ export const FastSHAPChart: React.FC = memo(function FastSHAPChart() {
     useDiagnosticResults();
 
   return (
-    <div className="bg-surface-container-lowest rounded-[20px] pastel-shadow p-5 border border-border-subtle/50 font-sans flex flex-col justify-between h-full">
+    <div className="mono-card p-5 font-sans text-white flex flex-col justify-between h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-section-header text-section-header text-on-surface flex items-center gap-2">
-          <span className="material-symbols-outlined text-clinical-blue text-[20px]">bar_chart</span>
+        <h2 className="text-sm font-bold tracking-wide uppercase text-zinc-200">
           FastSHAP Feature Impact
         </h2>
         {Object.keys(featureOverrides).length > 0 && (
@@ -20,14 +19,14 @@ export const FastSHAPChart: React.FC = memo(function FastSHAPChart() {
             onClick={() => {
               Object.keys(featureOverrides).forEach((k) => setFeatureOverride(k, null));
             }}
-            className="text-[10px] font-data-mono text-clinical-blue hover:underline cursor-pointer"
+            className="text-[10px] font-mono text-zinc-400 hover:text-white underline cursor-pointer"
           >
-            Reset What-If
+            Reset
           </button>
         )}
       </div>
 
-      <div className="space-y-3 font-caption text-caption">
+      <div className="space-y-3 font-mono text-xs">
         {/* Risk Contributors */}
         {topRiskFactors.slice(0, 3).map((factor) => {
           const currentOverride = featureOverrides[factor.featureName];
@@ -37,15 +36,15 @@ export const FastSHAPChart: React.FC = memo(function FastSHAPChart() {
 
           return (
             <div key={factor.featureName} className="flex items-center gap-3">
-              <span className="w-16 text-right text-on-surface-variant font-data-mono text-[11px] truncate" title={factor.featureName}>
-                {factor.featureName.length > 8 ? factor.featureName.slice(0, 8) + '..' : factor.featureName}
+              <span className="w-20 text-right text-zinc-400 text-[11px] truncate" title={factor.featureName}>
+                {factor.featureName.replace(/_/g, ' ')}
               </span>
-              <div className="flex-1 h-4 bg-surface-container-low rounded-sm relative group overflow-hidden">
+              <div className="flex-1 h-3 bg-zinc-900 rounded relative overflow-hidden border border-zinc-800">
                 <div
-                  className="absolute left-1/2 h-full dusty-rose rounded-r-sm opacity-90 transition-all duration-300"
+                  className="absolute left-1/2 h-full bg-white transition-all duration-300"
                   style={{ width: `${pct}%` }}
                 />
-                <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-outline-variant" />
+                <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-zinc-700" />
                 <input
                   type="range"
                   min="0"
@@ -54,10 +53,9 @@ export const FastSHAPChart: React.FC = memo(function FastSHAPChart() {
                   value={displayVal}
                   onChange={(e) => setFeatureOverride(factor.featureName, parseFloat(e.target.value))}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  title={`Adjust ${factor.featureName} for What-If Analysis (+${displayVal.toFixed(2)} φ)`}
                 />
               </div>
-              <span className="w-12 font-data-mono text-[11px] text-alert-coral font-semibold">
+              <span className="w-12 text-[11px] text-white font-bold">
                 +{displayVal.toFixed(1)}
               </span>
             </div>
@@ -72,17 +70,17 @@ export const FastSHAPChart: React.FC = memo(function FastSHAPChart() {
 
           return (
             <div key={factor.featureName} className="flex items-center gap-3">
-              <span className="w-16 text-right text-on-surface-variant font-data-mono text-[11px] truncate" title={factor.featureName}>
-                {factor.featureName.length > 8 ? factor.featureName.slice(0, 8) + '..' : factor.featureName}
+              <span className="w-20 text-right text-zinc-400 text-[11px] truncate" title={factor.featureName}>
+                {factor.featureName.replace(/_/g, ' ')}
               </span>
-              <div className="flex-1 h-4 bg-surface-container-low rounded-sm relative overflow-hidden">
+              <div className="flex-1 h-3 bg-zinc-900 rounded relative overflow-hidden border border-zinc-800">
                 <div
-                  className="absolute right-1/2 h-full sage-green rounded-l-sm opacity-90 transition-all duration-300"
+                  className="absolute right-1/2 h-full bg-zinc-400 transition-all duration-300"
                   style={{ width: `${pct}%` }}
                 />
-                <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-outline-variant" />
+                <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-zinc-700" />
               </div>
-              <span className="w-12 font-data-mono text-[11px] text-success-green font-semibold">
+              <span className="w-12 text-[11px] text-zinc-300 font-bold">
                 {factor.shapValue.toFixed(1)}
               </span>
             </div>
@@ -92,4 +90,3 @@ export const FastSHAPChart: React.FC = memo(function FastSHAPChart() {
     </div>
   );
 });
-

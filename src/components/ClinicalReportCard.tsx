@@ -15,30 +15,30 @@ const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
   };
 
   return (
-    <div className="mt-3 space-y-2 font-body-md text-xs">
+    <div className="mt-3 space-y-2 text-xs font-mono">
       {savedNotes.length > 0 && (
-        <div className="space-y-1 font-data-mono text-[11px]">
+        <div className="space-y-1">
           {savedNotes.map((note, idx) => (
-            <div key={idx} className="p-2 rounded-lg bg-white/80 border border-success-green/30 text-on-surface">
-              <span className="text-success-green text-[10px] block font-bold">Observed #{idx + 1}</span>
+            <div key={idx} className="p-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+              <span className="text-zinc-500 text-[10px] block font-bold">Observed Note #{idx + 1}</span>
               {note}
             </div>
           ))}
         </div>
       )}
 
-      <div className="flex gap-2 font-body-md text-xs">
+      <div className="flex gap-2">
         <input
           type="text"
           value={clinicalNote}
           onChange={(e) => setClinicalNote(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSaveNote()}
           placeholder="Add observation note..."
-          className="flex-1 bg-white/80 border border-outline-variant rounded-lg px-3 py-1.5 text-on-surface focus:outline-none focus:border-clinical-blue placeholder:text-on-surface-variant/60"
+          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-500 placeholder:text-zinc-600"
         />
         <button
           onClick={handleSaveNote}
-          className="bg-clinical-blue hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer"
+          className="bg-white hover:bg-zinc-200 text-black font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
         >
           Save
         </button>
@@ -50,7 +50,7 @@ const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
 function deriveAcousticInsight(depression: number, stress: number): { text: string; f0Label: string; f0Delta: string } {
   if (depression > 20 || stress > 25) {
     return {
-      text: 'Pitch variability (F0) is severely blunted with monotonic prosody. Speech rate is significantly reduced by 32%, indicating psychomotor retardation consistent with major depressive features.',
+      text: 'Pitch variability (F0) is severely blunted with monotonic prosody. Speech rate is significantly reduced by 32%, indicating psychomotor retardation.',
       f0Label: 'SEVERELY BLUNTED',
       f0Delta: '-32%',
     };
@@ -64,7 +64,7 @@ function deriveAcousticInsight(depression: number, stress: number): { text: stri
   }
   if (depression > 6 || stress > 10) {
     return {
-      text: 'Pitch variability (F0) remains slightly blunted compared to normative baseline. Speech rate is reduced by 8%, consistent with mild psychomotor retardation.',
+      text: 'Pitch variability (F0) remains slightly blunted compared to normative baseline. Speech rate is reduced by 8%, consistent with mild psychomotor strain.',
       f0Label: 'MILDLY BLUNTED',
       f0Delta: '-8%',
     };
@@ -79,27 +79,27 @@ function deriveAcousticInsight(depression: number, stress: number): { text: stri
 function deriveVisualInsight(depression: number, anxiety: number): { text: string; eyeContactPct: number; eyeLabel: string } {
   if (depression > 20 || anxiety > 16) {
     return {
-      text: 'Markedly reduced facial expressivity across all action units. Gaze aversion prominent with minimal eye contact, consistent with severe affective withdrawal.',
+      text: 'Markedly reduced facial expressivity across all action units. Gaze aversion prominent with minimal eye contact.',
       eyeContactPct: 28,
       eyeLabel: 'LOW',
     };
   }
   if (depression > 12 || anxiety > 10) {
     return {
-      text: 'Reduced facial expressivity noted in lower facial action units. Eye contact is diminished, potentially reflecting social withdrawal or anxious avoidance.',
+      text: 'Reduced facial expressivity noted in lower facial action units. Eye contact is diminished.',
       eyeContactPct: 52,
       eyeLabel: 'BELOW NORM',
     };
   }
   if (depression > 6 || anxiety > 5) {
     return {
-      text: 'Mildly reduced facial expressivity in lower action units. Eye contact maintained at acceptable levels within therapeutic range.',
+      text: 'Mildly reduced facial expressivity in lower action units. Eye contact maintained at acceptable levels.',
       eyeContactPct: 68,
       eyeLabel: 'ACCEPTABLE',
     };
   }
   return {
-    text: 'Facial expressivity is within normative range with appropriate affective modulation. Eye contact is sustained and consistent.',
+    text: 'Facial expressivity is within normative range with appropriate affective modulation.',
     eyeContactPct: 85,
     eyeLabel: 'HEALTHY',
   };
@@ -112,85 +112,76 @@ export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
   const visual = deriveVisualInsight(continuousScores.depression, continuousScores.anxiety);
 
   const predClass = classification.predictedClass;
-  const statusColor =
-    predClass === 'Healthy' ? 'text-success-green' :
-    predClass === 'Mild' ? 'text-warning-amber' :
-    'text-alert-coral';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-widget-gap w-full font-sans">
-      {/* 1. Acoustic Profile Card — DYNAMIC */}
-      <div className="bg-[#f0f9ff] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full font-sans text-white">
+      {/* 1. Acoustic Profile Card */}
+      <div className="mono-card p-5 flex flex-col justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-3 text-clinical-blue">
-            <span className="material-symbols-outlined text-[20px]">summarize</span>
-            <h3 className="font-section-header text-section-header">Acoustic Profile</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">Acoustic Profile</h3>
           </div>
-          <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          <p className="text-xs text-zinc-400 leading-relaxed font-sans">
             {acoustic.text}
           </p>
         </div>
-        <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs font-data-mono">
-          <span className="text-on-surface-variant">F0 Variance</span>
-          <span className="font-bold text-clinical-blue">{acoustic.f0Label} ({acoustic.f0Delta})</span>
+        <div className="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center text-xs font-mono">
+          <span className="text-zinc-500">F0 Variance</span>
+          <span className="font-bold text-white">{acoustic.f0Label} ({acoustic.f0Delta})</span>
         </div>
       </div>
 
-      {/* 2. Visual Kinematics Card — DYNAMIC */}
-      <div className="bg-[#fdf2f8] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
+      {/* 2. Visual Kinematics Card */}
+      <div className="mono-card p-5 flex flex-col justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-3 text-alert-coral">
-            <span className="material-symbols-outlined text-[20px]">visibility</span>
-            <h3 className="font-section-header text-section-header">Visual Kinematics</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">Visual Kinematics</h3>
           </div>
-          <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          <p className="text-xs text-zinc-400 leading-relaxed font-sans">
             {visual.text}
           </p>
         </div>
-        <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs font-data-mono">
-          <span className="text-on-surface-variant">Eye Contact</span>
-          <span className="font-bold text-alert-coral">{visual.eyeContactPct}% {visual.eyeLabel}</span>
+        <div className="mt-4 pt-3 border-t border-zinc-800 flex justify-between items-center text-xs font-mono">
+          <span className="text-zinc-500">Eye Contact</span>
+          <span className="font-bold text-white">{visual.eyeContactPct}% {visual.eyeLabel}</span>
         </div>
       </div>
 
-      {/* 3. System Status & Diagnostic Summary Card — DYNAMIC */}
-      <div className="bg-[#f0fdf4] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
+      {/* 3. System Status & Diagnostic Summary Card */}
+      <div className="mono-card p-5 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-success-green">
-              <span className="material-symbols-outlined text-[20px]">check_circle</span>
-              <h3 className="font-section-header text-section-header">System Status</h3>
-            </div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">System Evaluation</h3>
             <button
               onClick={exportFHIRReport}
-              className="px-2.5 py-1 rounded-lg bg-success-green/20 text-success-green hover:bg-success-green hover:text-white font-data-mono text-[10px] font-bold transition-all cursor-pointer border border-success-green/30"
+              className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-[10px] font-bold border border-zinc-700 transition-all cursor-pointer"
             >
               Export FHIR
             </button>
           </div>
 
-          <div className="space-y-2 font-data-mono text-data-mono text-on-surface-variant mb-3">
-            <div className="flex justify-between border-b border-black/5 pb-1">
+          <div className="space-y-2 font-mono text-xs text-zinc-400 mb-3">
+            <div className="flex justify-between border-b border-zinc-800 pb-1">
               <span>Predicted Status</span>
-              <span className={`font-bold ${statusColor}`}>{predClass}</span>
+              <span className="font-bold text-white px-2 py-0.5 rounded bg-zinc-800">{predClass}</span>
             </div>
-            <div className="flex justify-between border-b border-black/5 pb-1">
+            <div className="flex justify-between border-b border-zinc-800 pb-1">
               <span>Depression</span>
-              <span className="font-bold text-on-surface">{continuousScores.depression.toFixed(1)} / 34</span>
+              <span className="font-bold text-zinc-200">{continuousScores.depression.toFixed(1)} / 34</span>
             </div>
-            <div className="flex justify-between border-b border-black/5 pb-1">
+            <div className="flex justify-between border-b border-zinc-800 pb-1">
               <span>Anxiety</span>
-              <span className="font-bold text-on-surface">{continuousScores.anxiety.toFixed(1)} / 24</span>
+              <span className="font-bold text-zinc-200">{continuousScores.anxiety.toFixed(1)} / 24</span>
             </div>
             <div className="flex justify-between pt-1">
               <span>Stress</span>
-              <span className="font-bold text-on-surface">{continuousScores.stress.toFixed(1)} / 39</span>
+              <span className="font-bold text-zinc-200">{continuousScores.stress.toFixed(1)} / 39</span>
             </div>
           </div>
 
           {/* Synthesized Narrative */}
-          <div className="p-2.5 rounded-lg bg-white/70 border border-success-green/20 text-xs font-body-md text-on-surface-variant leading-normal">
-            <span className="font-bold text-on-surface block text-[11px] mb-0.5">Synthesized Evaluation:</span>
+          <div className="p-2.5 rounded bg-zinc-900 border border-zinc-800 text-xs font-sans text-zinc-300 leading-normal">
+            <span className="font-bold text-white block text-[11px] mb-0.5">Synthesized Evaluation:</span>
             {clinicalNarrative}
           </div>
         </div>

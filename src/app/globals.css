@@ -1,81 +1,10 @@
 @import "tailwindcss";
 
-@theme {
-  --color-tertiary: #784b00;
-  --color-surface-container-lowest: #ffffff;
-  --color-secondary: #5d5e66;
-  --color-inverse-primary: #b4c5ff;
-  --color-on-secondary-fixed: #1a1b22;
-  --color-warning-amber: #f59e0b;
-  --color-primary: #004ac6;
-  --color-on-secondary: #ffffff;
-  --color-on-primary-fixed: #00174b;
-  --color-tertiary-fixed-dim: #ffb95f;
-  --color-on-error-container: #93000a;
-  --color-surface-tint: #0053db;
-  --color-inverse-surface: #2f3131;
-  --color-alert-coral: #f43f5e;
-  --color-on-secondary-fixed-variant: #46464e;
-  --color-on-secondary-container: #63646c;
-  --color-error: #ba1a1a;
-  --color-surface-container-low: #f3f3f3;
-  --color-on-surface-variant: #434655;
-  --color-primary-fixed-dim: #b4c5ff;
-  --color-on-tertiary: #ffffff;
-  --color-outline: #737686;
-  --color-surface-variant: #e2e2e2;
-  --color-tertiary-container: #996100;
-  --color-inverse-on-surface: #f0f1f1;
-  --color-clinical-blue: #2563eb;
-  --color-on-surface: #1a1c1c;
-  --color-surface-container: #eeeeee;
-  --color-surface: #f9f9f9;
-  --color-on-error: #ffffff;
-  --color-surface-dim: #dadada;
-  --color-success-green: #10b981;
-  --color-on-tertiary-container: #ffeedd;
-  --color-primary-fixed: #dbe1ff;
-  --color-outline-variant: #c3c6d7;
-  --color-tertiary-fixed: #ffddb8;
-  --color-on-primary-fixed-variant: #003ea8;
-  --color-secondary-fixed-dim: #c6c5cf;
-  --color-on-tertiary-fixed: #2a1700;
-  --color-secondary-fixed: #e3e1ec;
-  --color-on-tertiary-fixed-variant: #653e00;
-  --color-primary-container: #2563eb;
-  --color-background: #f9f9f9;
-  --color-on-primary-container: #eeefff;
-  --color-surface-bright: #f9f9f9;
-  --color-surface-container-highest: #e2e2e2;
-  --color-on-background: #1a1c1c;
-  --color-border-subtle: #e5e7eb;
-  --color-on-primary: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-surface-container-high: #e8e8e8;
-  --color-secondary-container: #e3e1ec;
-
-  --spacing-top-bar-height: 3rem;
-  --spacing-stack-xs: 0.25rem;
-  --spacing-internal-padding: 1.25rem;
-  --spacing-container-padding: 1.5rem;
-  --spacing-nav-width: 16rem;
-  --spacing-stack-sm: 0.5rem;
-  --spacing-widget-gap: 1.5rem;
-
-  --font-data-mono: 'JetBrains Mono', monospace;
-  --font-caption: 'Geist', sans-serif;
-  --font-section-header: 'Geist', sans-serif;
-  --font-data-mono-lg: 'JetBrains Mono', monospace;
-  --font-data-label: 'Geist', sans-serif;
-  --font-body-md: 'Geist', sans-serif;
-  --font-nav-brand: 'Geist', sans-serif;
-}
-
 @layer base {
   html, body {
-    font-family: 'Geist', sans-serif;
-    background-color: var(--color-background, #f9f9f9);
-    color: var(--color-on-background, #1a1c1c);
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #09090b;
+    color: #f4f4f5;
     min-height: 100vh;
     overflow-x: hidden;
     overflow-y: auto;
@@ -83,106 +12,29 @@
   }
 }
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+.mono-card {
+  background-color: #121215;
+  border: 1px solid #27272a;
+  border-radius: 1rem;
 }
 
-.pastel-shadow {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+.mono-card-subtle {
+  background-color: #18181b;
+  border: 1px solid #27272a;
 }
 
-.pastel-progress-bg {
-  background-color: rgba(226, 232, 240, 0.5);
-}
-
-.pastel-green {
-  background-color: #bbf7d0;
-  color: #166534;
-}
-
-.pastel-apricot {
-  background-color: #fed7aa;
-  color: #9a3412;
-}
-
-.pastel-blue {
-  background-color: #bfdbfe;
-  color: #1e40af;
-}
-
-.sage-green {
-  background-color: #9ca3af;
-}
-
-.dusty-rose {
-  background-color: #fda4af;
-}
-
-.font-data-mono {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 500;
-}
-
-.font-data-mono-lg {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
-  line-height: 28px;
-  font-weight: 700;
-}
-
-.font-caption {
-  font-family: 'Geist', sans-serif;
-  font-size: 10px;
-  line-height: 14px;
-  font-weight: 700;
-}
-
-.font-section-header {
-  font-family: 'Geist', sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 600;
-}
-
-.font-data-label {
-  font-family: 'Geist', sans-serif;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 600;
-}
-
-.font-body-md {
-  font-family: 'Geist', sans-serif;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 400;
-}
-
-.font-nav-brand {
-  font-family: 'Geist', sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: -0.02em;
-  font-weight: 600;
-}
-
-/* Custom Scrollbar */
+/* Custom Scrollbar - Monochrome */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f3f3f3;
+  background: #18181b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c3c6d7;
-  border-radius: 2px;
+  background: #3f3f46;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: #71717a;
 }
-
