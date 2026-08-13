@@ -1,10 +1,36 @@
 # Phases — Backend ML Pipeline (Teammate B)
 
-> **Read this preamble every time a new phase begins.** It contains the branching protocol, parallel-work boundaries, and commit discipline that govern every phase below.
+> **Read this preamble every time a new phase begins.** It contains the project context, hosting strategy, branching protocol, parallel-work boundaries, and commit discipline that govern every phase below.
 
 ---
 
-## Preamble — Git Workflow & Parallel Development Protocol
+## Preamble
+
+### Project Context
+
+This is a **hackathon project** — a live demo in front of judges is the endgame. Every architectural and hosting decision is optimized for a working, shareable, real-time demonstration. If it can't be demoed live, it doesn't count.
+
+### Hosting & Deployment Stack
+
+The entire system runs on **free-tier infrastructure** with zero operational cost.
+
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| **Backend hosting** | **Hugging Face Spaces** (Docker SDK, 2 vCPU, 16 GB RAM) | Free, always-on, no cold starts for Docker Spaces. Judges get a live `wss://` endpoint. |
+| **Backend framework** | **FastAPI + Uvicorn** | Async WebSocket gateway — sub-85ms server-side latency. |
+| **Inference engine** | **ONNX Runtime (CPU, INT8)** | No GPU needed. Quantized model (~108 MB) runs fast on 2 vCPUs. |
+| **Frontend hosting** | **Vercel Edge Network** | Free tier, globally distributed CDN. Teammate A deploys separately. |
+| **Frontend framework** | **Next.js 15 / React 19 + TypeScript** | WebAssembly edge processing — raw video/audio never leaves the browser. |
+| **Communication** | **WebSocket (chunked streaming)** | Only ~2 KB feature vectors travel over the wire, not raw media. Works on mediocre WiFi. |
+
+**Why this works for a live demo:**
+
+- **Shareable URL** — judges open the link on their own device and see it work instantly.
+- **No "works on my machine" risk** — both ends are deployed, not running off a laptop.
+- **Sub-150ms end-to-end** — feels instant during a live demo. No loading spinners.
+- **Privacy-preserving by design** — camera/mic data is processed client-side and discarded. Only extracted feature vectors are transmitted.
+
+### Git Workflow & Parallel Development Protocol
 
 ### Branching Rules
 
