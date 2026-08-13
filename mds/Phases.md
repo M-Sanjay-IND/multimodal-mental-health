@@ -126,10 +126,10 @@ Establish Pydantic v2 request/response contracts matching client payloads, build
 
 ### Exit Criteria
 
-- [ ] All schema validators pass with valid and invalid test payloads.
-- [ ] Preprocessor artifacts saved and load correctly.
-- [ ] Parquet splits exist with correct row ratios and zero data anomalies.
-- [ ] All work committed and PR merged into `dev`.
+- [x] All schema validators pass with valid and invalid test payloads.
+- [x] Preprocessor artifacts saved and load correctly.
+- [x] Parquet splits exist with correct row ratios and zero data anomalies.
+- [x] All work committed and PR merged into `dev`.
 
 ---
 
