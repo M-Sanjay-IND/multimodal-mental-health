@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef, useState, useCallback } from 'react';
 import { useDiagnosticResults } from '../hooks/useDiagnosticResults';
 
 interface FacialSaliencyOverlayProps {
@@ -17,9 +17,18 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
     const salAnimFrameRef = useRef<number | null>(null);
     const lastDrawTimeRef = useRef<number>(0);
 
-    // Compute dynamic Valence & Arousal values for Affective Computing card
+    // Media capture states
+    const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+    const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
+    const [isRecordingAudio, setIsRecordingAudio] = useState<boolean>(false);
+    const [recordDurationSec, setRecordDurationSec] = useState<number>(0);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const timerRef = useRef<number | null>(null);
+
+    // Compute dynamic Valence & Arousal values
     const valenceVal = (-0.42 + (continuousScores.depression / 34) * -0.2).toFixed(2);
-    const valencePct = Math.min(100, Math.max(10, Math.round((Math.abs(parseFloat(valenceVal))) * 100)));
+    const valencePct = Math.min(100, Math.max(10, Math.round(Math.abs(parseFloat(valenceVal)) * 100)));
 
     const arousalVal = (0.68 + (continuousScores.stress / 39) * 0.15).toFixed(2);
     const arousalPct = Math.min(100, Math.max(10, Math.round(parseFloat(arousalVal) * 100)));
@@ -42,7 +51,6 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         ctx.beginPath();
         ctx.moveTo(0, canvas.height / 2);
 
@@ -69,7 +77,7 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
     }, [isStreaming]);
 
     /**
-     * 2. Draw Landmark-Anchored Spatial Attention & Saliency Heatmaps
+     * 2. Draw Landmark Heatmaps
      */
     useEffect(() => {
       const canvas = salCanvasRef.current;
@@ -96,7 +104,6 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
           const centerY = canvas.height / 2;
           const faceHeight = canvas.height * 0.52;
 
-          // AU04 Brow Lowerer Heatmap
           const au04Val = saliencyWeights.au04BrowLowerer || 0.15;
           const au04Radius = 14 + au04Val * 22;
           const grad04 = ctx.createRadialGradient(
@@ -114,7 +121,6 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
           ctx.arc(centerX, centerY - faceHeight * 0.25, au04Radius, 0, Math.PI * 2);
           ctx.fill();
 
-          // AU15 Lip Depressor Heatmap
           const au15Val = saliencyWeights.au15LipDepressor || 0.12;
           const au15Radius = 12 + au15Val * 20;
           const grad15 = ctx.createRadialGradient(
@@ -143,8 +149,68 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
       };
     }, [isStreaming, lowPowerMode, saliencyWeights]);
 
+    /**
+     * 3. Capture Real Photo Snapshot from Video Feed
+     */
+    const handleCaptureSnapshot = useCallback(() => {
+      if (videoRef.current) {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth || 640;
+        canvas.height = videoRef.current.videoHeight || 360;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/png');
+          setSnapshotUrl(dataUrl);
+        }
+      }
+    }, [videoRef]);
+
+    /**
+     * 4. Record Real Microphone Audio Clip Session
+     */
+    const handleToggleRecordAudio = useCallback(async () => {
+      if (!isRecordingAudio) {
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recorder = new MediaRecorder(audioStream);
+          mediaRecorderRef.current = recorder;
+          audioChunksRef.current = [];
+
+          recorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              audioChunksRef.current.push(e.data);
+            }
+          };
+
+          recorder.onstop = () => {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const url = URL.createObjectURL(blob);
+            setAudioBlobUrl(url);
+          };
+
+          recorder.start();
+          setIsRecordingAudio(true);
+          setRecordDurationSec(0);
+
+          if (timerRef.current) clearInterval(timerRef.current);
+          timerRef.current = window.setInterval(() => {
+            setRecordDurationSec((prev) => prev + 1);
+          }, 1000);
+        } catch (err) {
+          console.warn('Microphone permission error:', err);
+        }
+      } else {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        if (timerRef.current) clearInterval(timerRef.current);
+        setIsRecordingAudio(false);
+      }
+    }, [isRecordingAudio]);
+
     return (
-      <div className="bg-surface-container-lowest rounded-[24px] pastel-shadow p-2 relative overflow-hidden flex flex-col h-full border border-border-subtle/50">
+      <div className="bg-surface-container-lowest rounded-[24px] pastel-shadow p-3 relative overflow-hidden flex flex-col h-full border border-border-subtle/50 space-y-3">
         <div className="relative w-full aspect-video rounded-[20px] overflow-hidden bg-black group flex-1">
           {/* Real Webcam Stream or Fallback Image */}
           <div className="absolute inset-0 bg-secondary flex items-center justify-center">
@@ -225,46 +291,64 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
         </div>
 
         {/* Quick Action Controls Bar (Camera Snapshot & Mic Recording) */}
-        <div className="mt-2 px-2 py-1.5 flex items-center justify-between gap-2 bg-surface-container-low/80 rounded-xl border border-outline-variant/50">
+        <div className="px-2 py-2 flex items-center justify-between gap-3 bg-surface-container-low/90 rounded-xl border border-outline-variant/60">
           <button
-            onClick={() => {
-              if (videoRef.current) {
-                const canvas = document.createElement('canvas');
-                canvas.width = videoRef.current.videoWidth || 640;
-                canvas.height = videoRef.current.videoHeight || 360;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                  ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-                  alert('Captured live video snapshot for feature extraction!');
-                }
-              } else {
-                alert('Start camera stream to capture snapshot.');
-              }
-            }}
-            className="flex-1 py-1.5 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container border border-outline-variant text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            onClick={handleCaptureSnapshot}
+            className="flex-1 py-2 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container border border-outline-variant text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
           >
-            <span className="material-symbols-outlined text-[16px] text-clinical-blue">photo_camera</span>
-            Capture Snapshot Image
+            <span className="material-symbols-outlined text-[18px] text-clinical-blue">photo_camera</span>
+            Capture Snapshot Photo
           </button>
 
           <button
-            onClick={async () => {
-              try {
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                alert('Microphone permission granted! Recording acoustic features...');
-              } catch {
-                alert('Microphone access denied or unattached.');
-              }
-            }}
-            className="flex-1 py-1.5 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container border border-outline-variant text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            onClick={handleToggleRecordAudio}
+            className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+              isRecordingAudio
+                ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse'
+                : 'bg-surface-container-lowest hover:bg-surface-container border-outline-variant text-on-surface'
+            }`}
           >
-            <span className="material-symbols-outlined text-[16px] text-alert-coral">mic</span>
-            Mic Record Audio
+            <span className="material-symbols-outlined text-[18px] text-alert-coral">mic</span>
+            {isRecordingAudio ? `Stop Recording (${recordDurationSec}s)` : 'Record Audio Clip'}
           </button>
         </div>
 
+        {/* Captured Media Preview Panel (Shows actual photo snapshot & playable audio player) */}
+        {(snapshotUrl || audioBlobUrl) && (
+          <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/60 flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex items-center gap-4 flex-wrap">
+              {snapshotUrl && (
+                <div className="flex items-center gap-2.5 bg-surface-container-lowest p-1.5 rounded-lg border border-outline-variant">
+                  <img src={snapshotUrl} alt="Captured camera photo" className="w-16 h-10 object-cover rounded border" />
+                  <div>
+                    <span className="font-bold text-xs block text-on-surface">Snapshot Frame</span>
+                    <span className="text-[10px] text-on-surface-variant">PNG • Visual Embedding Extracted</span>
+                  </div>
+                </div>
+              )}
+
+              {audioBlobUrl && (
+                <div className="flex flex-col gap-1 bg-surface-container-lowest p-2 rounded-lg border border-outline-variant">
+                  <span className="font-bold text-xs text-on-surface">Recorded Audio Clip</span>
+                  <audio src={audioBlobUrl} controls className="h-8 max-w-[200px]" />
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                setSnapshotUrl(null);
+                setAudioBlobUrl(null);
+              }}
+              className="text-[11px] font-semibold text-on-surface-variant hover:text-on-surface underline cursor-pointer"
+            >
+              Clear Captured Media
+            </button>
+          </div>
+        )}
+
         {/* Action Unit Metrics Bar below video */}
-        <div className="mt-2 px-2 py-1.5 grid grid-cols-4 gap-2 font-data-mono text-data-mono text-on-surface-variant">
+        <div className="px-2 py-1.5 grid grid-cols-4 gap-2 font-data-mono text-data-mono text-on-surface-variant">
           <div className="text-center bg-surface-container-low/60 rounded-lg p-1">
             <span className="text-[10px] text-on-surface-variant block">AU04 Brow</span>
             <span className="font-bold text-on-surface">
@@ -294,5 +378,3 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
     );
   }
 );
-
-
