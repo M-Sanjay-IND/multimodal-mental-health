@@ -8,6 +8,7 @@ sdk_version: 4.44.0
 app_file: app.py
 pinned: false
 license: mit
+hardware: cpu-basic
 ---
 
 # 🧠 Multimodal Psychiatric Evaluation & Severity Estimation Engine (DCMF-Net)
