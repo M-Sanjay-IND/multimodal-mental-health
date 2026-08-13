@@ -402,138 +402,16 @@ export const DiagnosticProvider: React.FC<DiagnosticProviderProps> = ({
           }
         }
       } catch (e) {
-        // Backend offline: proceed with standalone client evaluation
-      }
-
-      // Standalone simulation mode for presets / uploaded files
-      if (data.presetName === 'Moderate Distress') {
-        const res: BackendInferenceResponse = {
-          sequenceId: Date.now(),
-          timestamp: Date.now(),
-          transitLatencyMs: 12,
-          classification: {
-            healthy: 0.12,
-            mild: 0.25,
-            moderate: 0.58,
-            severe: 0.05,
-            predictedClass: 'Moderate',
-          },
-          continuousScores: {
-            depression: 18.4,
-            anxiety: 14.2,
-            stress: 22.8,
-            confidenceMargin: 1.8,
-          },
-          fastShapAttributions: [
-            { featureName: 'Sleep_Quality', shapValue: 3.2, category: 'behavioral' },
-            { featureName: 'GSR_Level', shapValue: 2.8, category: 'physiological' },
-            { featureName: 'Eye_Blink_Rate', shapValue: 2.1, category: 'visual' },
-            { featureName: 'HRV_Index', shapValue: -2.1, category: 'physiological' },
-            { featureName: 'Social_Engagement', shapValue: -1.5, category: 'behavioral' },
-            { featureName: 'Heart_Rate_BPM', shapValue: 1.4, category: 'physiological' },
-            { featureName: 'Typing_Speed_WPM', shapValue: -0.5, category: 'behavioral' },
-            { featureName: 'Daily_App_Usage_Min', shapValue: 0.9, category: 'behavioral' },
-            { featureName: 'Session_Frequency', shapValue: 0.3, category: 'behavioral' },
-            { featureName: 'Idle_Time_Min', shapValue: 0.4, category: 'behavioral' },
-            { featureName: 'Facial_Emotion_Variance', shapValue: 0.6, category: 'visual' },
-            { featureName: 'Smile_Intensity', shapValue: -0.9, category: 'visual' },
-            { featureName: 'Head_Motion_Index', shapValue: 0.2, category: 'visual' },
-            { featureName: 'MFCC_Mean', shapValue: -0.3, category: 'acoustic' },
-            { featureName: 'MFCC_Variance', shapValue: 0.4, category: 'acoustic' },
-            { featureName: 'Pitch_Mean', shapValue: 0.5, category: 'acoustic' },
-            { featureName: 'Speech_Rate', shapValue: -0.7, category: 'acoustic' },
-            { featureName: 'Skin_Temperature', shapValue: -0.2, category: 'physiological' },
-          ],
-          saliencyWeights: {
-            au04BrowLowerer: 0.68,
-            au15LipDepressor: 0.54,
-            au06CheekRaiser: 0.22,
-            au12SmilePuller: 0.15,
-          },
-          clinicalNarrative:
-            'Diagnostic Assessment: Uploaded evaluation profile indicates Moderate Distress. Elevated galvanic skin response and blunted facial expressivity noted.',
-          modalityStatus: { visual: 'active', acoustic: 'active', tabular: 'active' },
-        };
-        handleIncomingResponse(res);
-      } else if (data.presetName === 'Severe Agitation') {
-        const res: BackendInferenceResponse = {
-          sequenceId: Date.now(),
-          timestamp: Date.now(),
-          transitLatencyMs: 10,
-          classification: {
-            healthy: 0.05,
-            mild: 0.10,
-            moderate: 0.20,
-            severe: 0.65,
-            predictedClass: 'Severe',
-          },
-          continuousScores: {
-            depression: 26.5,
-            anxiety: 21.0,
-            stress: 34.2,
-            confidenceMargin: 1.2,
-          },
-          fastShapAttributions: [
-            { featureName: 'GSR_Level', shapValue: 3.8, category: 'physiological' },
-            { featureName: 'Heart_Rate_BPM', shapValue: 3.4, category: 'physiological' },
-            { featureName: 'Eye_Blink_Rate', shapValue: 2.9, category: 'visual' },
-            { featureName: 'HRV_Index', shapValue: -3.2, category: 'physiological' },
-            { featureName: 'Sleep_Quality', shapValue: -2.8, category: 'behavioral' },
-            { featureName: 'Social_Engagement', shapValue: -2.1, category: 'behavioral' },
-            { featureName: 'Typing_Speed_WPM', shapValue: -0.5, category: 'behavioral' },
-            { featureName: 'Daily_App_Usage_Min', shapValue: 0.9, category: 'behavioral' },
-            { featureName: 'Session_Frequency', shapValue: 0.3, category: 'behavioral' },
-            { featureName: 'Idle_Time_Min', shapValue: 0.4, category: 'behavioral' },
-            { featureName: 'Facial_Emotion_Variance', shapValue: 0.6, category: 'visual' },
-            { featureName: 'Smile_Intensity', shapValue: -0.9, category: 'visual' },
-            { featureName: 'Head_Motion_Index', shapValue: 0.2, category: 'visual' },
-            { featureName: 'MFCC_Mean', shapValue: -0.3, category: 'acoustic' },
-            { featureName: 'MFCC_Variance', shapValue: 0.4, category: 'acoustic' },
-            { featureName: 'Pitch_Mean', shapValue: 0.5, category: 'acoustic' },
-            { featureName: 'Speech_Rate', shapValue: -0.7, category: 'acoustic' },
-            { featureName: 'Skin_Temperature', shapValue: -0.2, category: 'physiological' },
-          ],
-          saliencyWeights: {
-            au04BrowLowerer: 0.85,
-            au15LipDepressor: 0.72,
-            au06CheekRaiser: 0.10,
-            au12SmilePuller: 0.08,
-          },
-          clinicalNarrative:
-            'CRITICAL ASSESSMENT: Uploaded file evaluation indicates Severe Agitation & High Stress markers. Immediate clinical review advised.',
-          modalityStatus: { visual: 'active', acoustic: 'active', tabular: 'active' },
-        };
-        handleIncomingResponse(res);
-      } else {
-        // General uploaded file evaluation
-        const res: BackendInferenceResponse = {
-          sequenceId: Date.now(),
-          timestamp: Date.now(),
-          transitLatencyMs: 14,
-          classification: {
-            healthy: 0.78,
-            mild: 0.15,
-            moderate: 0.05,
-            severe: 0.02,
-            predictedClass: 'Healthy',
-          },
-          continuousScores: {
-            depression: 5.4,
-            anxiety: 4.1,
-            stress: 7.2,
-            confidenceMargin: 1.5,
-          },
-          fastShapAttributions: DEFAULT_FASTSHAP,
-          saliencyWeights: DEFAULT_SALIENCY,
-          clinicalNarrative:
-            'Uploaded Multimodal File Evaluation: Patient biomarkers remain within normal therapeutic boundaries.',
-          modalityStatus: { visual: 'active', acoustic: 'active', tabular: 'active' },
-        };
-        handleIncomingResponse(res);
+        console.error('Error connecting to DCMF-Net model server at http://localhost:8000/evaluate/rest:', e);
       }
     },
     [handleIncomingResponse]
   );
+
+  // Execute real PyTorch model inference immediately on mount
+  useEffect(() => {
+    injectUploadedPayload({});
+  }, [injectUploadedPayload]);
 
   const value: DiagnosticContextState = {
     classification,
