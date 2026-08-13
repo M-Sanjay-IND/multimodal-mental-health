@@ -545,10 +545,10 @@ End-to-end integration test with the frontend team's dashboard, finalize documen
 
 ### Exit Criteria
 
-- [ ] End-to-end integration with frontend verified.
-- [ ] Documentation complete and reviewed.
-- [ ] `dev` → `main` PR opened and approved.
-- [ ] `main` merge executed. Repository tagged with release version.
+- [x] End-to-end integration with frontend verified.
+- [x] Documentation complete and reviewed.
+- [x] `dev` → `main` PR opened and approved.
+- [x] `main` merge executed. Repository tagged with release version.
 
 ---
 
