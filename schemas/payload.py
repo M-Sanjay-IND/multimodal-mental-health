@@ -129,9 +129,30 @@ class SHAPAttribution(BaseModel):
     attributions: Dict[str, float]
 
 
+class FeatureAttributionItem(BaseModel):
+    feature_name: str
+    importance_score: float
+    direction: str  # "risk_factor", "protective_factor", or "neutral"
+
+
+class ClinicalNarrativePayload(BaseModel):
+    summary: str
+    modality_breakdown: str
+    key_risk_factors: List[str]
+    protective_factors: List[str]
+    clinical_recommendations: List[str]
+
+
+class XaiPayload(BaseModel):
+    attributions: List[FeatureAttributionItem]
+    narrative: ClinicalNarrativePayload
+    cross_attention_weights: Dict[str, float]
+
+
 class EvaluationResponse(BaseModel):
     status: str = "success"
     classification: ClassificationOutput
     regression: RegressionOutput
     shap_attribution: Optional[SHAPAttribution] = None
     narrative: Optional[str] = None
+    xai: Optional[XaiPayload] = None

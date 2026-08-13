@@ -20,26 +20,35 @@ from schemas.payload import (
     RegressionOutput,
     SEVERITY_CLASSES,
     TABULAR_FEATURE_NAMES,
+    SHAPAttribution,
+    XaiPayload,
 )
 from models.multi_task import MultiTaskModel
+from xai.shap_explainer import FastSHAPExplainer
+from xai.narrative_engine import ClinicalNarrativeEngine
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("server.main")
 
-# Global model and preprocessor references
+# Global model, preprocessor, and XAI references
 MODEL = None
 PREPROCESSOR = None
+EXPLAINER = None
+NARRATIVE_ENGINE = None
 
 
 def load_server_artifacts():
-    global MODEL, PREPROCESSOR
+    global MODEL, PREPROCESSOR, EXPLAINER, NARRATIVE_ENGINE
     artifact_dir = "artifacts"
     prep_path = os.path.join(artifact_dir, "preprocessor.joblib")
     model_int8_path = os.path.join(artifact_dir, "model_int8.pt")
     fp32_path = os.path.join(artifact_dir, "model_state.pt")
 
-    logger.info("Loading preprocessor and model state artifacts...")
+    logger.info("Loading preprocessor, model state, and XAI engines...")
+
+    EXPLAINER = FastSHAPExplainer()
+    NARRATIVE_ENGINE = ClinicalNarrativeEngine()
 
     if os.path.exists(prep_path):
         PREPROCESSOR = joblib.load(prep_path)
@@ -103,12 +112,14 @@ def health_check():
         "status": "healthy",
         "model_loaded": MODEL is not None,
         "preprocessor_loaded": PREPROCESSOR is not None,
+        "explainer_loaded": EXPLAINER is not None,
+        "narrative_engine_loaded": NARRATIVE_ENGINE is not None,
         "version": "1.0.0",
     }
 
 
 def predict_payload(payload: EvaluationPayload) -> EvaluationResponse:
-    global MODEL, PREPROCESSOR
+    global MODEL, PREPROCESSOR, EXPLAINER, NARRATIVE_ENGINE
 
     if MODEL is None:
         raise RuntimeError("Model is not loaded!")
@@ -127,7 +138,7 @@ def predict_payload(payload: EvaluationPayload) -> EvaluationResponse:
 
     # 3. Model Forward Pass
     with torch.no_grad():
-        logits, reg_scores, _ = MODEL(v_tensor, a_tensor, t_tensor)
+        logits, reg_scores, attn_dict = MODEL(v_tensor, a_tensor, t_tensor)
 
         probs = F.softmax(logits, dim=-1)[0].numpy().tolist()
         pred_cls_id = int(torch.argmax(logits, dim=-1)[0].item())
@@ -149,10 +160,46 @@ def predict_payload(payload: EvaluationPayload) -> EvaluationResponse:
         stress_score=float(round(reg_vals[2], 2)),
     )
 
+    # 4. FastSHAP Feature Attributions
+    if EXPLAINER is None:
+        EXPLAINER = FastSHAPExplainer()
+    attributions_list, attributions_dict, _ = EXPLAINER.explain(MODEL, v_tensor, a_tensor, scaled_tabular)
+
+    # 5. Clinical Narrative Generation
+    if NARRATIVE_ENGINE is None:
+        NARRATIVE_ENGINE = ClinicalNarrativeEngine()
+    narrative_payload = NARRATIVE_ENGINE.generate_narrative(cls_output, reg_output, attributions_list, attn_dict)
+
+    def _parse_weight(k: str, default: float) -> float:
+        val = attn_dict.get(k)
+        if val is None:
+            return default
+        if isinstance(val, torch.Tensor):
+            return float(round(val.mean().item(), 4))
+        try:
+            return float(round(val, 4))
+        except Exception:
+            return default
+
+    attn_weights = {
+        "visual": _parse_weight("weights_vt", 0.33),
+        "acoustic": _parse_weight("weights_at", 0.33),
+        "tabular": _parse_weight("weights_ta", 0.34),
+    }
+
+    xai_payload = XaiPayload(
+        attributions=attributions_list,
+        narrative=narrative_payload,
+        cross_attention_weights=attn_weights,
+    )
+
     response = EvaluationResponse(
         status="success",
         classification=cls_output,
         regression=reg_output,
+        shap_attribution=SHAPAttribution(attributions=attributions_dict),
+        narrative=narrative_payload.summary,
+        xai=xai_payload,
     )
 
     return response
