@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 .ds_store
 node_modules/
+datasets/
+data/*.parquet
+ scratch/
+.env
