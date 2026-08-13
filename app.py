@@ -215,7 +215,7 @@ footer { display: none !important; }
 label { color: #94a3b8 !important; font-size: .82rem !important; }
 """
 
-with gr.Blocks(css=_CSS, title="MindScan — Multimodal Mental Health Assessment") as demo:
+with gr.Blocks(title="MindScan — Multimodal Mental Health Assessment") as demo:
 
     gr.HTML("""
     <div style="text-align:center;padding:32px 0 8px;font-family:'Inter',sans-serif">
@@ -296,4 +296,4 @@ with gr.Blocks(css=_CSS, title="MindScan — Multimodal Mental Health Assessment
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(css=_CSS)
