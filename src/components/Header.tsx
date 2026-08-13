@@ -12,84 +12,112 @@ export const Header: React.FC<HeaderProps> = memo(function Header({
   onSessionToggle,
   isSessionActive = false,
 }) {
-  const { connectionState, modalityStatus, payloadLatencyMs } = useDiagnosticResults();
+  const { modalityStatus, payloadLatencyMs } = useDiagnosticResults();
 
-  const getStatusBadge = (status: 'active' | 'degraded' | 'disabled') => {
-    switch (status) {
+  const getVisualPillStyle = () => {
+    switch (modalityStatus.visual) {
       case 'active':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        return 'pastel-green';
       case 'degraded':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-      case 'disabled':
+        return 'pastel-apricot';
       default:
-        return 'bg-zinc-800 text-zinc-500 border-zinc-700';
+        return 'bg-surface-container-high text-on-surface-variant';
+    }
+  };
+
+  const getAcousticPillStyle = () => {
+    switch (modalityStatus.acoustic) {
+      case 'active':
+        return 'pastel-green';
+      case 'degraded':
+        return 'pastel-apricot';
+      default:
+        return 'bg-surface-container-high text-on-surface-variant';
     }
   };
 
   return (
-    <header className="bg-[#121216] border-b border-[#1E1E24] px-6 h-14 flex items-center justify-between z-40 flex-shrink-0">
-      {/* Title & Brand */}
-      <div className="flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-[#00FF66]" />
-        <div>
-          <h1 className="text-sm font-semibold text-zinc-100 tracking-tight">
-            Multimodal Psychiatric Evaluation Engine
-          </h1>
-          <p className="text-[11px] font-mono text-zinc-400">
-            Real-Time Privacy-Preserving Clinical Telemetry
-          </p>
-        </div>
+    <header className="fixed top-0 right-0 w-full z-50 h-top-bar-height flex items-center justify-between px-container-padding bg-surface text-clinical-blue font-nav-brand text-nav-brand shadow-sm border-b border-outline-variant md:w-[calc(100%-16rem)]">
+      <div className="flex items-center gap-4">
+        <span className="font-nav-brand text-nav-brand text-clinical-blue uppercase tracking-wider font-semibold">
+          PSYCH-METRIC
+        </span>
       </div>
 
-      {/* Stream Modalities & Connection Status */}
-      <div className="flex items-center gap-4 text-xs font-mono">
-        {/* Modality Badges */}
-        <div className="hidden md:flex items-center gap-2 border-r border-[#1E1E24] pr-4">
-          <span className={`px-2 py-0.5 rounded border text-[10px] uppercase ${getStatusBadge(modalityStatus.visual)}`}>
-            Visual: {modalityStatus.visual}
+      <div className="flex items-center gap-4 lg:gap-6">
+        {/* Dynamic Telemetry Pills (Soft Pastel) */}
+        <div className="hidden sm:flex items-center gap-2.5 font-data-mono text-data-mono">
+          <span className={`px-3 py-1 rounded-full ${getVisualPillStyle()} flex items-center gap-1.5 shadow-sm text-xs font-medium`}>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                modalityStatus.visual === 'active'
+                  ? 'bg-success-green animate-pulse'
+                  : modalityStatus.visual === 'degraded'
+                  ? 'bg-warning-amber'
+                  : 'bg-outline'
+              }`}
+            />
+            VISUAL: {modalityStatus.visual === 'active' ? 'OK' : modalityStatus.visual.toUpperCase()}
           </span>
-          <span className={`px-2 py-0.5 rounded border text-[10px] uppercase ${getStatusBadge(modalityStatus.acoustic)}`}>
-            Acoustic: {modalityStatus.acoustic}
+
+          <span className={`px-3 py-1 rounded-full ${getAcousticPillStyle()} flex items-center gap-1.5 shadow-sm text-xs font-medium`}>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                modalityStatus.acoustic === 'active'
+                  ? 'bg-success-green animate-pulse'
+                  : modalityStatus.acoustic === 'degraded'
+                  ? 'bg-warning-amber'
+                  : 'bg-outline'
+              }`}
+            />
+            ACOUSTIC: {modalityStatus.acoustic === 'degraded' ? 'NOISY' : modalityStatus.acoustic.toUpperCase()}
           </span>
-          <span className={`px-2 py-0.5 rounded border text-[10px] uppercase ${getStatusBadge(modalityStatus.tabular)}`}>
-            Tabular: {modalityStatus.tabular}
+
+          <span className="px-3 py-1 rounded-full pastel-blue flex items-center gap-1.5 shadow-sm text-xs font-medium">
+            <span className="material-symbols-outlined text-[14px]">speed</span>
+            {payloadLatencyMs}ms
           </span>
         </div>
 
-        {/* Latency Readout */}
-        <div className="flex items-center gap-1.5 text-zinc-400">
-          <span>Latency:</span>
-          <span className="text-[#00FF66] font-semibold">{payloadLatencyMs} ms</span>
-        </div>
+        {/* Action Controls & Session Toggle */}
+        <div className="flex items-center gap-3 border-l border-outline-variant pl-4 ml-1">
+          {onSessionToggle && (
+            <button
+              onClick={onSessionToggle}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-data-label tracking-wide transition-all cursor-pointer flex items-center gap-1.5 ${
+                isSessionActive
+                  ? 'bg-alert-coral/10 text-alert-coral border border-alert-coral/30 hover:bg-alert-coral hover:text-white'
+                  : 'bg-clinical-blue text-white hover:bg-blue-700 shadow-sm'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">
+                {isSessionActive ? 'stop_circle' : 'play_circle'}
+              </span>
+              {isSessionActive ? 'Stop Stream' : 'Start Stream'}
+            </button>
+          )}
 
-        {/* Connection State */}
-        <div className="flex items-center gap-2 bg-[#0A0A0C] border border-[#1E1E24] px-3 py-1 rounded">
-          <span
-            className={`w-2 h-2 rounded-full ${
-              connectionState === 'CONNECTED'
-                ? 'bg-[#00FF66]'
-                : connectionState === 'CONNECTING' || connectionState === 'RECONNECTING'
-                ? 'bg-[#FFB800] animate-pulse'
-                : 'bg-zinc-600'
-            }`}
-          />
-          <span className="text-zinc-300 font-medium text-[11px]">{connectionState}</span>
-        </div>
-
-        {/* Session Action Button */}
-        {onSessionToggle && (
           <button
-            onClick={onSessionToggle}
-            className={`px-4 py-1.5 rounded text-xs font-semibold font-mono tracking-wide transition-all cursor-pointer ${
-              isSessionActive
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30'
-                : 'bg-[#00FF66] text-black hover:bg-emerald-400 font-bold'
-            }`}
+            title="Notifications"
+            className="text-on-surface-variant hover:bg-surface-container-low transition-colors p-1.5 rounded-full cursor-pointer active:opacity-80 flex items-center justify-center"
           >
-            {isSessionActive ? 'Stop Session' : 'Start Session'}
+            <span className="material-symbols-outlined text-[20px]">notifications</span>
           </button>
-        )}
+          <button
+            title="Settings"
+            className="text-on-surface-variant hover:bg-surface-container-low transition-colors p-1.5 rounded-full cursor-pointer active:opacity-80 flex items-center justify-center"
+          >
+            <span className="material-symbols-outlined text-[20px]">settings</span>
+          </button>
+          <button
+            title="Help"
+            className="text-on-surface-variant hover:bg-surface-container-low transition-colors p-1.5 rounded-full cursor-pointer active:opacity-80 flex items-center justify-center"
+          >
+            <span className="material-symbols-outlined text-[20px]">help</span>
+          </button>
+        </div>
       </div>
     </header>
   );
 });
+

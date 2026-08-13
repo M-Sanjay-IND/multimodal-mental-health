@@ -37,7 +37,7 @@ export const Dashboard: React.FC = function Dashboard() {
   });
 
   /**
-   * Toggle Session Trigger.
+   * Toggle Session Stream Trigger.
    */
   const handleSessionToggle = useCallback(async () => {
     if (!isSessionActive) {
@@ -63,7 +63,7 @@ export const Dashboard: React.FC = function Dashboard() {
         updateModalityStatus('acoustic', 'active');
         updateModalityStatus('tabular', 'active');
       } catch {
-        // Exception handling
+        // Exception handling for camera/mic permissions
       }
     } else {
       setIsSessionActive(false);
@@ -90,7 +90,7 @@ export const Dashboard: React.FC = function Dashboard() {
   ]);
 
   return (
-    <div className="bg-[#0A0A0C] text-[#e2e1eb] h-screen overflow-hidden flex flex-col antialiased font-sans">
+    <div className="flex h-screen overflow-hidden bg-background text-on-background w-full">
       {/* 15-Second Baseline Calibration Modal */}
       <BaselineCalibrationModal
         isOpen={isCalibrating}
@@ -98,33 +98,46 @@ export const Dashboard: React.FC = function Dashboard() {
         onCancel={cancelBaselineCalibration}
       />
 
-      {/* Telemetry Header */}
-      <Header onSessionToggle={handleSessionToggle} isSessionActive={isSessionActive} />
+      {/* SideNavBar Navigation */}
+      <Sidebar onSessionToggle={handleSessionToggle} isSessionActive={isSessionActive} />
 
-      {/* Main Container */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Clinical Sidebar */}
-        <Sidebar onSessionToggle={handleSessionToggle} isSessionActive={isSessionActive} />
+      {/* Main Content Area */}
+      <div className="flex-1 ml-0 md:ml-nav-width flex flex-col h-full bg-background relative overflow-hidden">
+        {/* TopNavBar Header */}
+        <Header onSessionToggle={handleSessionToggle} isSessionActive={isSessionActive} />
 
-        {/* Main Dashboard Grid */}
-        <main className="flex-1 overflow-y-auto bg-[#0A0A0C] p-4 flex flex-col gap-4">
-          {/* Top Grid: Camera Viewport (8 cols) & FastSHAP Panel (4 cols) */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 lg:col-span-8">
-              <FacialSaliencyOverlay videoRef={videoRef} isStreaming={isSessionActive} />
+        {/* Dashboard Content */}
+        <main className="flex-1 mt-top-bar-height p-container-padding overflow-y-auto w-full">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Session Information Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="font-section-header text-section-header text-on-surface">
+                  Session 42A - Active Monitoring
+                </h1>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  Patient ID: 884-291-B
+                </p>
+              </div>
             </div>
-            <div className="col-span-12 lg:col-span-4">
-              <FastSHAPChart />
-            </div>
-          </div>
 
-          {/* Bottom Grid: Symptom Meters (6 cols) & Clinical Summary (6 cols) */}
-          <div className="grid grid-cols-12 gap-4 flex-1">
-            <div className="col-span-12 lg:col-span-6">
-              <SymptomGauges />
-            </div>
-            <div className="col-span-12 lg:col-span-6">
-              <ClinicalReportCard />
+            {/* Bento Grid Layout */}
+            <div className="grid grid-cols-12 gap-widget-gap">
+              {/* Main Video Viewport (Col 8) */}
+              <div className="col-span-12 lg:col-span-8 flex flex-col">
+                <FacialSaliencyOverlay videoRef={videoRef} isStreaming={isSessionActive} />
+              </div>
+
+              {/* Side Panels (Col 4) */}
+              <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                <SymptomGauges />
+                <FastSHAPChart />
+              </div>
+
+              {/* Clinical Summary Bottom Row (Col 12) */}
+              <div className="col-span-12 mt-2">
+                <ClinicalReportCard />
+              </div>
             </div>
           </div>
         </main>
@@ -132,3 +145,4 @@ export const Dashboard: React.FC = function Dashboard() {
     </div>
   );
 };
+

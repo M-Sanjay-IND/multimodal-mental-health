@@ -1,30 +1,28 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
 import './globals.css';
 
-const geist = Geist({
-  variable: '--font-geist',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
 export const metadata: Metadata = {
-  title: 'Psychiatric Evaluation Dashboard | Tactical Clinical Intelligence',
-  description: 'Explainable Multimodal Mental Health Assessment Engine',
+  title: 'Psychiatric Evaluation Dashboard',
+  description: 'Multimodal Psychiatric Evaluation & Affective Assessment Dashboard',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${geist.variable} h-full antialiased`}>
+    <html lang="en" className="light h-full antialiased">
       <head>
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Geist:wght@400;600;700&display=swap"
         />
       </head>
-      <body className="bg-[#0A0A0C] text-[#e2e1eb] h-screen overflow-hidden flex flex-col antialiased">
+      <body className="bg-background text-on-background flex h-screen overflow-hidden antialiased">
         {children}
       </body>
     </html>
   );
 }
+

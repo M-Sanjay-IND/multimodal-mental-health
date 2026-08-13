@@ -5,7 +5,6 @@ import { useDiagnosticResults } from '../hooks/useDiagnosticResults';
 
 /**
  * Isolated Clinician Notes Form Component.
- * Detached from high-frequency (100ms) WebSocket state updates to eliminate typing lag.
  */
 const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
   const [clinicalNote, setClinicalNote] = useState('');
@@ -19,32 +18,30 @@ const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
   };
 
   return (
-    <div className="mt-auto space-y-3 font-mono text-xs">
-      {/* Saved Clinician Notes */}
+    <div className="mt-3 space-y-2 font-body-md text-xs">
       {savedNotes.length > 0 && (
-        <div className="space-y-1.5 font-mono text-[11px]">
+        <div className="space-y-1 font-data-mono text-[11px]">
           {savedNotes.map((note, idx) => (
-            <div key={idx} className="p-2 rounded bg-[#0A0A0C] border border-[#00FF66]/30 text-zinc-200">
-              <span className="text-[#00FF66] text-[10px] block font-semibold">Note #{idx + 1}</span>
+            <div key={idx} className="p-2 rounded-lg bg-white/80 border border-success-green/30 text-on-surface">
+              <span className="text-success-green text-[10px] block font-bold">Observed #{idx + 1}</span>
               {note}
             </div>
           ))}
         </div>
       )}
 
-      {/* Input Box */}
-      <div className="flex gap-2 font-mono text-xs">
+      <div className="flex gap-2 font-body-md text-xs">
         <input
           type="text"
           value={clinicalNote}
           onChange={(e) => setClinicalNote(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSaveNote()}
-          placeholder="Add clinician observation note..."
-          className="flex-1 bg-[#0A0A0C] border border-[#1E1E24] rounded px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-[#00FF66]/50 placeholder:text-zinc-600"
+          placeholder="Add observation note..."
+          className="flex-1 bg-white/80 border border-outline-variant rounded-lg px-3 py-1.5 text-on-surface focus:outline-none focus:border-clinical-blue placeholder:text-on-surface-variant/60"
         />
         <button
           onClick={handleSaveNote}
-          className="bg-[#1E1E24] hover:bg-zinc-800 border border-zinc-700 px-4 py-1.5 rounded text-zinc-200 font-semibold transition-colors cursor-pointer"
+          className="bg-clinical-blue hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer"
         >
           Save
         </button>
@@ -56,82 +53,84 @@ const ClinicianNotesForm: React.FC = memo(function ClinicianNotesForm() {
 export const ClinicalReportCard: React.FC = memo(function ClinicalReportCard() {
   const { classification, clinicalNarrative, exportFHIRReport } = useDiagnosticResults();
 
-  const getStatusBadgeStyle = (status: string) => {
-    switch (status) {
-      case 'Healthy':
-        return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
-      case 'Mild':
-        return 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400';
-      case 'Moderate':
-        return 'bg-amber-500/10 border-amber-500/30 text-amber-400';
-      case 'Severe':
-      default:
-        return 'bg-rose-500/10 border-rose-500/30 text-rose-400';
-    }
-  };
-
   return (
-    <div className="bg-[#121216] border border-[#1E1E24] rounded p-4 flex flex-col justify-between h-full font-sans">
-      {/* Header with 1-Click FHIR Export */}
-      <div className="flex items-center justify-between mb-3 border-b border-[#1E1E24] pb-2 font-mono text-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-zinc-200">Clinical Evaluation Summary</span>
-          <span className={`px-2.5 py-0.5 rounded border font-semibold text-[10px] uppercase ${getStatusBadgeStyle(classification.predictedClass)}`}>
-            Status: {classification.predictedClass}
-          </span>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-widget-gap w-full font-sans">
+      {/* 1. Acoustic Profile Card */}
+      <div className="bg-[#f0f9ff] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-3 text-clinical-blue">
+            <span className="material-symbols-outlined text-[20px]">summarize</span>
+            <h3 className="font-section-header text-section-header">Acoustic Profile</h3>
+          </div>
+          <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Pitch variability (F0) remains blunted compared to normative baseline. Speech rate is reduced by 15%, consistent with mild psychomotor retardation.
+          </p>
         </div>
-        <button
-          onClick={exportFHIRReport}
-          className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-[10px] font-mono font-semibold transition-colors cursor-pointer"
-        >
-          Export FHIR Report
-        </button>
+        <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs font-data-mono">
+          <span className="text-on-surface-variant">F0 Variance</span>
+          <span className="font-bold text-clinical-blue">BLUNTED (-15%)</span>
+        </div>
       </div>
 
-      {/* Categorical Distribution */}
-      <div className="mb-3 space-y-1 font-mono text-[11px]">
-        <span className="text-zinc-400 text-[10px] uppercase tracking-wider block">
-          Diagnostic Class Probabilities
-        </span>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: 'Healthy', val: classification.healthy },
-            { label: 'Mild', val: classification.mild },
-            { label: 'Moderate', val: classification.moderate },
-            { label: 'Severe', val: classification.severe },
-          ].map((item) => (
-            <div key={item.label} className="p-2 rounded bg-[#0A0A0C] border border-[#1E1E24] text-center">
-              <span className="text-zinc-500 text-[10px] block">{item.label}</span>
-              <span className="text-zinc-200 font-semibold text-xs font-mono">
-                {(item.val * 100).toFixed(0)}%
-              </span>
+      {/* 2. Visual Kinematics Card */}
+      <div className="bg-[#fdf2f8] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-3 text-alert-coral">
+            <span className="material-symbols-outlined text-[20px]">visibility</span>
+            <h3 className="font-section-header text-section-header">Visual Kinematics</h3>
+          </div>
+          <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Reduced facial expressivity noted in lower facial action units. Eye contact maintained at 68% of session, within acceptable therapeutic range.
+          </p>
+        </div>
+        <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs font-data-mono">
+          <span className="text-on-surface-variant">Eye Contact</span>
+          <span className="font-bold text-alert-coral">68% ACCEPTABLE</span>
+        </div>
+      </div>
+
+      {/* 3. System Status & Diagnostic Summary Card */}
+      <div className="bg-[#f0fdf4] rounded-2xl p-5 pastel-shadow border-none flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-success-green">
+              <span className="material-symbols-outlined text-[20px]">check_circle</span>
+              <h3 className="font-section-header text-section-header">System Status</h3>
             </div>
-          ))}
+            <button
+              onClick={exportFHIRReport}
+              className="px-2.5 py-1 rounded-lg bg-success-green/20 text-success-green hover:bg-success-green hover:text-white font-data-mono text-[10px] font-bold transition-all cursor-pointer border border-success-green/30"
+            >
+              Export FHIR
+            </button>
+          </div>
+
+          <div className="space-y-2 font-data-mono text-data-mono text-on-surface-variant mb-3">
+            <div className="flex justify-between border-b border-black/5 pb-1">
+              <span>Predicted Status</span>
+              <span className="font-bold text-success-green">{classification.predictedClass}</span>
+            </div>
+            <div className="flex justify-between border-b border-black/5 pb-1">
+              <span>Data Quality</span>
+              <span className="font-bold text-on-surface">HIGH_FIDELITY</span>
+            </div>
+            <div className="flex justify-between pt-1">
+              <span>Uptime</span>
+              <span className="font-bold text-on-surface">99.98%</span>
+            </div>
+          </div>
+
+          {/* Synthesized Narrative */}
+          <div className="p-2.5 rounded-lg bg-white/70 border border-success-green/20 text-xs font-body-md text-on-surface-variant leading-normal">
+            <span className="font-bold text-on-surface block text-[11px] mb-0.5">Synthesized Evaluation:</span>
+            {clinicalNarrative}
+          </div>
         </div>
-      </div>
 
-      {/* Synthesized Rule Narrative */}
-      <div className="p-3 rounded bg-[#0A0A0C] border border-[#1E1E24] font-mono text-xs text-zinc-300 leading-relaxed mb-3">
-        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold block mb-1">
-          Synthesized Evaluation
-        </span>
-        <p>{clinicalNarrative}</p>
+        {/* Clinician Notes Form */}
+        <ClinicianNotesForm />
       </div>
-
-      {/* Contextual Clinical Decision Support Systems (CDSS) Nudge */}
-      <div className="p-2.5 rounded bg-cyan-500/10 border border-cyan-500/30 font-mono text-[11px] text-cyan-200 mb-3 space-y-1">
-        <div className="text-[10px] text-cyan-400 font-semibold uppercase tracking-wider flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-          CDSS Nudge — Clinical Decision Support
-        </div>
-        <p className="leading-normal">
-          High Galvanic Skin Response (GSR_Level) coupled with speech rate reduction (+1.4 risk attribution) detected.
-          <span className="text-white font-semibold block mt-0.5">Suggested Prompt: Ask patient about recent acute sleep quality or stressors.</span>
-        </p>
-      </div>
-
-      {/* Detached Clinician Notes Form */}
-      <ClinicianNotesForm />
     </div>
   );
 });
+
