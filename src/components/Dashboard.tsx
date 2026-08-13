@@ -18,7 +18,10 @@ export const Dashboard: React.FC = function Dashboard() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
 
+  const diagnosticResults = useDiagnosticResults();
   const {
     connectWebSocket,
     disconnectWebSocket,
@@ -26,7 +29,21 @@ export const Dashboard: React.FC = function Dashboard() {
     isCalibrating,
     completeBaselineCalibration,
     cancelBaselineCalibration,
-  } = useDiagnosticResults();
+    injectUploadedPayload,
+  } = diagnosticResults;
+
+  const handleRunAnalysis = useCallback(async () => {
+    setIsAnalyzing(true);
+    setAnalysisStatus('⚡ Running DCMF-Net inference & FastSHAP attributions...');
+    try {
+      await injectUploadedPayload({});
+      setAnalysisStatus('✅ DCMF-Net Diagnostic Analysis Complete! Dashboard updated.');
+    } catch {
+      setAnalysisStatus('⚠️ Analysis failed. Ensure server is running at localhost:8000.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [injectUploadedPayload]);
 
   // Audio Processing Hook
   const { startAudio, stopAudio } = useAudioProcessor({
@@ -165,14 +182,43 @@ export const Dashboard: React.FC = function Dashboard() {
                 </p>
               </div>
 
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="px-4 py-2 bg-clinical-blue hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px]">upload</span>
-                Upload Files / Data Inputs
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Prominent Analyze Button */}
+                <button
+                  onClick={handleRunAnalysis}
+                  disabled={isAnalyzing}
+                  className="px-5 py-2.5 text-white rounded-xl font-bold text-sm shadow-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                    boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                  }}
+                >
+                  <span className="material-symbols-outlined text-[18px]">neurology</span>
+                  {isAnalyzing ? 'Analyzing with DCMF-Net...' : '⚡ Run DCMF-Net Diagnostic Model'}
+                </button>
+
+                <button
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="px-4 py-2 bg-clinical-blue hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">upload</span>
+                  Upload Files
+                </button>
+              </div>
             </div>
+
+            {/* Analysis Status Banner */}
+            {analysisStatus && (
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs mb-4 flex items-center justify-between">
+                <span>{analysisStatus}</span>
+                <button
+                  onClick={() => setAnalysisStatus(null)}
+                  className="text-blue-400 hover:text-blue-600 cursor-pointer ml-4 font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             {/* Media Permission Warning Banner if blocked */}
             {mediaError && (
