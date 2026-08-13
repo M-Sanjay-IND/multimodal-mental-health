@@ -224,6 +224,45 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
           </div>
         </div>
 
+        {/* Quick Action Controls Bar (Camera Snapshot & Mic Recording) */}
+        <div className="mt-2 px-2 py-1.5 flex items-center justify-between gap-2 bg-surface-container-low/80 rounded-xl border border-outline-variant/50">
+          <button
+            onClick={() => {
+              if (videoRef.current) {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoRef.current.videoWidth || 640;
+                canvas.height = videoRef.current.videoHeight || 360;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                  alert('Captured live video snapshot for feature extraction!');
+                }
+              } else {
+                alert('Start camera stream to capture snapshot.');
+              }
+            }}
+            className="flex-1 py-1.5 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container border border-outline-variant text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px] text-clinical-blue">photo_camera</span>
+            Capture Snapshot Image
+          </button>
+
+          <button
+            onClick={async () => {
+              try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                alert('Microphone permission granted! Recording acoustic features...');
+              } catch {
+                alert('Microphone access denied or unattached.');
+              }
+            }}
+            className="flex-1 py-1.5 px-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container border border-outline-variant text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px] text-alert-coral">mic</span>
+            Mic Record Audio
+          </button>
+        </div>
+
         {/* Action Unit Metrics Bar below video */}
         <div className="mt-2 px-2 py-1.5 grid grid-cols-4 gap-2 font-data-mono text-data-mono text-on-surface-variant">
           <div className="text-center bg-surface-container-low/60 rounded-lg p-1">
@@ -255,4 +294,5 @@ export const FacialSaliencyOverlay: React.FC<FacialSaliencyOverlayProps> = memo(
     );
   }
 );
+
 

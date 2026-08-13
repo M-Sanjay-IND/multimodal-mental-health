@@ -1,13 +1,31 @@
-# 🧠 MindScan — Multimodal Psychiatric Evaluation & Severity Estimation Platform (DCMF-Net)
+# 🧠 PSYCH-METRIC — Multimodal Psychiatric Evaluation & Severity Estimation Platform (DCMF-Net)
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16.3%2B-black.svg)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19.2%2B-blue.svg)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.2%2B-646CFF.svg)](https://vitejs.dev/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An end-to-end clinical-grade AI platform integrating **Dynamic Cross-Modal Attention Fusion (DCMF-Net)**, **FastSHAP Explainable AI (XAI)**, and a zero-hallucination **Clinical Narrative Engine** for real-time mental health assessment across visual (webcam / video upload), acoustic (microphone / audio upload), and mobile biometric streams.
+An end-to-end clinical-grade AI platform integrating **Dynamic Cross-Modal Attention Fusion (DCMF-Net)**, **FastSHAP Explainable AI (XAI)**, and a zero-hallucination **Clinical Narrative Engine** for real-time mental health assessment across visual (webcam / video upload / image snapshot), acoustic (microphone / audio clip / audio upload), and mobile biometric streams.
+
+---
+
+## 🎨 White Modern Minimalistic Interface (PSYCH-METRIC)
+
+The application features a clean, high-contrast, modern minimalistic light interface (`PSYCH-METRIC`):
+- **Live Video Stream & Camera Snapshot**: Real-time webcam video stream (`getUserMedia`) with single-click frame capture to snapshot image for instant visual embedding extraction.
+- **Microphone Permission & Audio Recording**: Browser audio recording (`MediaRecorder` & Web Audio API) with duration tracking, volume visualization, and playback.
+- **Multimodal File & Data Upload**: Comprehensive upload modal for video files (`.mp4`, `.webm`), audio files (`.wav`, `.mp3`), image files (`.png`, `.jpg`), and tabular metrics (`.json`, `.csv`).
+- **Real-Time Telemetry Header**: Live status pills (`VISUAL: OK`, `ACOUSTIC: ACTIVE`, `18ms` latency pill, `Stop Stream` button).
+- **Clinician Sidebar**: Profile header for Dr. Adrian Sterling (Senior Psychiatrist), navigation tabs, clinical tools (`15s Calibration`, `Pause Epoch`, `Simulate Occlusion`, `Low Power (10Hz)`), protocol specs, socket reconnect, and emergency override.
+- **Clinical Dashboard Bento Grid**:
+  - **Severity Indicators**: Anhedonia (Depression), Psychomotor Agitation (Anxiety), Speech Latency (Stress) with animated progress bars & sparklines.
+  - **FastSHAP Feature Impact**: Real-time positive/negative feature attribution horizontal bar chart (`GSR_Lev`, `Heart_R`, `Daily_A`, `Sleep_Q`, `HRV_Ind`).
+  - **Acoustic Profile Card**: Pitch variability ($F_0$) variance and speech rate reduction analysis.
+  - **Visual Kinematics Card**: Lower facial action unit expressivity and eye contact percentages.
+  - **System Status & Synthesized Assessment**: Classification severity state, data quality, uptime, diagnostic narrative summary, and clinician observation note log.
 
 ---
 
@@ -15,18 +33,18 @@ An end-to-end clinical-grade AI platform integrating **Dynamic Cross-Modal Atten
 
 ```mermaid
 graph TD
-    subgraph Client Layer [Next.js 16 Web Application]
-        Cam[Live Webcam Stream] --> MP[MediaPipe 478 Face Mesh Wasm]
-        Mic[Microphone Input] --> WA[Web Audio Worklet Thread]
-        Upload[Video / Audio / JSON File Upload] --> Uploader[Multimodal File Processor]
+    subgraph Client Layer [PSYCH-METRIC Modern Minimalistic App]
+        Cam[Live Webcam Stream] --> Snapshot[Image Snapshot Capture]
+        Mic[Microphone Input] --> AudioRec[Audio Clip Recorder]
+        Upload[Video / Audio / Image / Data Upload] --> Uploader[Multimodal File Processor]
 
-        MP --> VisVec[128D Visual Vector E_V]
-        WA --> AcVec[256D Acoustic Vector E_A]
-        Uploader --> TabVec[18D Tabular Vector x_tab]
+        Snapshot --> VisVec[128D Visual Vector E_V]
+        AudioRec --> AcVec[256D Acoustic Vector E_A]
+        Upload --> TabVec[18D Tabular Vector x_tab]
     end
 
     subgraph Gateway Layer [FastAPI Gateway & WebSocket Gateway]
-        VisVec --> WS[WebSocket / REST Gateway ws://localhost:8000/evaluate/ws]
+        VisVec --> WS[WebSocket / REST Gateway http://localhost:8000/evaluate/rest]
         AcVec --> WS
         TabVec --> WS
     end
@@ -42,23 +60,12 @@ graph TD
         FastSHAP --> Narrative[Deterministic Clinical Narrative Engine]
     end
 
-    Narrative --> UI[Real-time Clinical Dashboard & Saliency Heatmaps]
+    Narrative --> UI[Real-Time PSYCH-METRIC Dashboard]
 ```
 
 ---
 
-## ✨ Key Features & Capabilities
-
-- **Real-Time Live WebCam & Microphone Stream**: Client-side MediaPipe 478 Face Mesh Wasm + Web Audio Worklet thread for zero-latency 3D landmark extraction, Eye Aspect Ratio (EAR), Facial Emotion Volatility (FEV), and Action Unit saliency weights.
-- **Multimodal File & Data Upload Support**: Upload video files (`.mp4`, `.webm`), audio files (`.wav`, `.mp3`), tabular JSON/CSV data, or select instant clinical presets ("Healthy Baseline", "Moderate Distress", "Severe Agitation").
-- **DCMF-Net Core Engine**: 4-Head Bi-Directional Cross-Attention fusing visual, acoustic, and biometric streams.
-- **INT8 Quantization & High Performance**: 1.86 MB model footprint with 0.46 ms single-sample CPU inference latency.
-- **FastSHAP Explainable AI (XAI)**: Real-time feature attribution identifying risk factors vs. protective resilience factors with interactive "What-If" slider analysis.
-- **Clinical Narrative & FHIR Export**: Automated diagnostic synthesis report card and one-click HL7/FHIR compliant JSON report generator.
-
----
-
-## 📈 Phase 8 Certified Benchmark Performance
+## 📈 Certified Benchmark Performance
 
 | Metric | Measured Value | Benchmark Target | Status |
 |--------|----------------|------------------|--------|
@@ -73,56 +80,48 @@ graph TD
 
 ---
 
-## 📊 Multimodal Input Schema
+## 🚀 Quick Start & Setup
 
-| Modality | Features | Dimensions | Source |
-|----------|----------|------------|--------|
-| **Visual** | Facial emotion variance, smile intensity, eye blink rate, head motion, Action Units | 128-D | MediaPipe 478 Wasm / Video upload |
-| **Acoustic** | Pitch mean, speech rate, MFCC means & variances, RMS energy | 256-D | Web Audio Worklet / Audio upload |
-| **Tabular / Biometrics** | Sleep quality, social engagement, HRV, GSR, heart rate, typing speed | 18 features | Robust scaled & Yeo-Johnson transformed |
-
----
-
-## 🧪 Severity Classification Schema
-
-| Class | PHQ-9 Depression | GAD-7 Anxiety | PSS Stress |
-|-------|-----------------|---------------|------------|
-| **Healthy** | ≤ 9 | ≤ 7 | ≤ 14 |
-| **Mild** | 10–13 | 8–9 | 15–18 |
-| **Moderate** | 14–20 | 10–14 | 19–25 |
-| **Severe** | ≥ 21 | ≥ 15 | ≥ 26 |
-
----
-
-## 🚀 Quick Start & Local Setup
-
-### 1. Clone Repository & Install Dependencies
+### 1. Install Dependencies
 
 ```bash
-git clone https://github.com/M-Sanjay-IND/multimodal-mental-health.git
-cd multimodal-mental-health
-
 # Install Python backend dependencies
 pip install -r requirements.txt
 
-# Install Next.js frontend dependencies
+# Install Next.js root dependencies
 npm install
+
+# Install Vite React frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
-### 2. Run Next.js Frontend Application
-```bash
-npm run dev
-# Next.js app available at http://localhost:3000
-```
+### 2. Run Frontends
 
-### 3. Run FastAPI Backend Gateway (Optional / Real-time Inference)
+- **Run Vite React App**:
+  ```bash
+  npm --prefix frontend run dev
+  # Available at http://localhost:5173
+  ```
+
+- **Run Next.js App**:
+  ```bash
+  npm run dev
+  # Available at http://localhost:3000
+  ```
+
+### 3. Run FastAPI Backend Gateway
+
 ```bash
 python server/main.py
-# FastAPI Swagger Docs: http://localhost:8000/docs
-# WebSocket Gateway:    ws://localhost:8000/evaluate/ws
+# REST Endpoint:      http://localhost:8000/evaluate/rest
+# WebSocket Endpoint: ws://localhost:8000/evaluate/ws
+# Swagger API Docs:   http://localhost:8000/docs
 ```
 
 ### 4. Run Pytest Suite
+
 ```bash
 python -m pytest tests
 ```
@@ -133,34 +132,28 @@ python -m pytest tests
 
 ```
 multimodal-mental-health/
-├── src/                      # Next.js 16 + React 19 Frontend App
-│   ├── app/                  # Next.app layout & page components
-│   ├── components/           # Dashboard, FacialSaliency, FastSHAP, DataUploadModal, Gauges
+├── frontend/                 # Vite React 19 PSYCH-METRIC White Minimalistic App
+│   ├── src/
+│   │   ├── App.tsx           # Main PSYCH-METRIC dashboard component
+│   │   ├── App.css           # Modern minimalistic light mode stylesheet
+│   │   └── index.css         # Typography and design system tokens
+├── src/                      # Next.js 16 + React 19 Application
+│   ├── app/                  # Next.js page routes & layout
+│   ├── components/           # Dashboard, FacialSaliencyOverlay, SymptomGauges, FastSHAPChart
 │   ├── context/              # DiagnosticContext state provider
-│   ├── hooks/                # useMediaPipeFaceMesh, useAudioProcessor, useDiagnosticResults
-│   ├── services/             # WebSocketService & response normalizer
-│   ├── types/                # Payload & response Zod schemas
-│   └── utils/                # Serialization & privacy manager
+│   └── hooks/                # MediaPipe, WebAudio & Diagnostic hooks
 ├── server/
-│   └── main.py               # FastAPI REST + WebSocket gateway
+│   └── main.py               # FastAPI REST + WebSocket inference gateway
 ├── models/
 │   ├── dcmf_net.py           # DCMF-Net cross-modal attention transformer
-│   ├── attention.py          # MARG gating attention modules
-│   └── multi_task.py         # Multi-task classification + regression heads
-├── training/
-│   ├── trainer.py            # Training loop with GradNorm loss balancing
-│   ├── losses.py             # AsymmetricFocalLoss, MultiTaskLoss, GradNorm
-│   └── dataset.py            # Parquet dataset loader
+│   └── multi_task.py         # Multi-task classification & regression heads
 ├── xai/
-│   ├── shap_explainer.py     # FastSHAP surrogate attribution network
-│   └── narrative_engine.py   # Deterministic clinical narrative generator
-├── schemas/
-│   └── payload.py            # Pydantic v2 request / response schemas
+│   ├── shap_explainer.py     # FastSHAP surrogate attribution engine
+│   └── narrative_engine.py   # Clinical narrative report generator
 ├── artifacts/
-│   ├── model_int8.pt         # INT8 quantized model (1.86 MB)
-│   ├── model_state.pt        # FP32 baseline checkpoint (7.2 MB)
-│   └── preprocessor.joblib   # Fitted tabular scaler + transformer
-└── tests/                    # 40+ pytest unit & integration tests
+│   ├── model_int8.pt         # INT8 quantized PyTorch model weights
+│   └── preprocessor.joblib   # Fitted tabular scaler & transformer
+└── tests/                    # Unit and integration test suite
 ```
 
 ---
@@ -169,4 +162,4 @@ multimodal-mental-health/
 
 Distributed under the **MIT License**. See `LICENSE` for details.
 
-> ⚠️ **Disclaimer**: This system is for research and hackathon demonstration purposes only. It is **not a substitute for professional clinical diagnosis or mental health treatment.**
+> ⚠️ **Disclaimer**: This system is for research and clinical demonstration purposes only. It is **not a substitute for professional clinical diagnosis or medical treatment.**
