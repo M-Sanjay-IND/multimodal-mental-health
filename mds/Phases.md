@@ -285,9 +285,10 @@ Serve model predictions via an asynchronous FastAPI WebSocket endpoint, wiring s
 
 ### Exit Criteria
 
-- [ ] Server starts, accepts connections, returns valid predictions.
-- [ ] Malformed payloads are rejected with structured errors.
-- [ ] All work committed and PR merged into `dev`.
+- [x] Functional FastAPI WebSocket server running locally on `ws://localhost:8000/evaluate/ws`.
+- [x] REST evaluation endpoint `POST /evaluate/rest` and health check `GET /health`.
+- [x] Malformed JSON payloads rejected with structured error responses.
+- [x] All work committed and PR merged into `dev`.
 
 ---
 
