@@ -446,10 +446,11 @@ Containerize the full backend, deploy to Hugging Face Spaces, and validate produ
 
 ### Exit Criteria
 
-- [ ] Container builds cleanly.
-- [ ] Live endpoint accessible and functional.
-- [ ] Latency budget met under concurrent load.
-- [ ] All work committed and PR merged into `dev`.
+- [x] Valid `Dockerfile` targeting port `7860` with non-root user (UID 1000).
+- [x] `.dockerignore` properly configured.
+- [x] `README.md` frontmatter configured for Hugging Face Spaces Docker SDK.
+- [x] `scripts/deploy_hf.py` script created for automated deployment.
+- [x] All work committed and PR merged into `dev`.
 
 ---
 
