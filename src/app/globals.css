@@ -72,11 +72,14 @@
 }
 
 @layer base {
-  body {
+  html, body {
     font-family: 'Geist', sans-serif;
     background-color: var(--color-background, #f9f9f9);
     color: var(--color-on-background, #1a1c1c);
+    min-height: 100vh;
     overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: smooth;
   }
 }
 
