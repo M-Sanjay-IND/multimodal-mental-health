@@ -236,10 +236,10 @@ $$\hat{y}_{\text{dep}} = 34 \cdot \sigma(z_{\text{dep}}),\quad \hat{y}_{\text{an
 
 ### Exit Criteria
 
-- [ ] Multi-task model trains without NaN/Inf losses.
-- [ ] Gradient magnitudes balanced across classification and regression.
-- [ ] Checkpoint saved and loadable.
-- [ ] All work committed and PR merged into `dev`.
+- [x] Multi-task model trains without NaN/Inf losses.
+- [x] Gradient magnitudes balanced across classification and regression.
+- [x] Checkpoint `artifacts/model_state.pt` saved and loadable.
+- [x] All work committed and PR merged into `dev`.
 
 ---
 
