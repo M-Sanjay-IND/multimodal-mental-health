@@ -40,12 +40,13 @@ NARRATIVE_ENGINE = None
 
 def load_server_artifacts():
     global MODEL, PREPROCESSOR, EXPLAINER, NARRATIVE_ENGINE
-    artifact_dir = "artifacts"
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    artifact_dir = os.path.join(project_root, "artifacts")
     prep_path = os.path.join(artifact_dir, "preprocessor.joblib")
     model_int8_path = os.path.join(artifact_dir, "model_int8.pt")
     fp32_path = os.path.join(artifact_dir, "model_state.pt")
 
-    logger.info("Loading preprocessor, model state, and XAI engines...")
+    logger.info(f"Loading preprocessor, model state, and XAI engines from {artifact_dir}...")
 
     EXPLAINER = FastSHAPExplainer()
     NARRATIVE_ENGINE = ClinicalNarrativeEngine()
@@ -61,7 +62,9 @@ def load_server_artifacts():
         checkpoint = torch.load(fp32_path, map_location="cpu", weights_only=False)
         MODEL = base_model
         MODEL.load_state_dict(checkpoint["model_state_dict"])
-        logger.info(f"Loaded FP32 model weights from {fp32_path} (epoch {checkpoint.get('epoch', '?')}, val_loss={checkpoint.get('val_loss', '?'):.4f})")
+        val_loss = checkpoint.get('val_loss')
+        loss_str = f"{val_loss:.4f}" if isinstance(val_loss, (int, float)) else str(val_loss)
+        logger.info(f"Loaded FP32 model weights from {fp32_path} (epoch {checkpoint.get('epoch', '?')}, val_loss={loss_str})")
     elif os.path.exists(model_int8_path):
         checkpoint = torch.load(model_int8_path, map_location="cpu", weights_only=False)
         MODEL = torch.ao.quantization.quantize_dynamic(base_model, {torch.nn.Linear}, dtype=torch.qint8)

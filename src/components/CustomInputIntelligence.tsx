@@ -396,7 +396,31 @@ export const CustomInputIntelligence: React.FC = function CustomInputIntelligenc
                   </div>
                 )}
 
-                {/* 3. Clinical Narrative */}
+                {/* 3. FastSHAP Feature Attributions */}
+                {modelResponse.shap_attribution?.attributions && (
+                  <div className="border-t border-slate-100 pt-4 space-y-2">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      FastSHAP Feature Impact
+                    </div>
+                    <div className="space-y-1.5 font-mono text-[11px]">
+                      {Object.entries(modelResponse.shap_attribution.attributions)
+                        .slice(0, 6)
+                        .map(([featName, val]: [string, any]) => {
+                          const isRisk = val > 0;
+                          return (
+                            <div key={featName} className="flex justify-between items-center bg-slate-50 px-2.5 py-1.5 rounded border border-slate-100">
+                              <span className="text-slate-700 font-sans">{featName.replace(/_/g, ' ')}</span>
+                              <span className={`font-bold ${isRisk ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {isRisk ? `+${val}` : val}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Clinical Narrative */}
                 {modelResponse.narrative && (
                   <div className="border-t border-slate-100 pt-4 space-y-1.5">
                     <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
