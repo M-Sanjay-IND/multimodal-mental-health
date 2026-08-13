@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Geist:wght@400;600;700&display=swap"
         />
       </head>
-      <body className="bg-background text-on-background flex h-screen overflow-hidden antialiased">
+      <body className="bg-background text-on-background min-h-screen overflow-y-auto antialiased">
         {children}
       </body>
     </html>
