@@ -184,9 +184,9 @@ $$\tilde{E}_m = \text{LayerNorm}\left( E_m + g_m \odot \text{MHCA}(m, \cdot) \ri
 
 ### Exit Criteria
 
-- [ ] `DCMFNet` forward pass produces $[B, 768]$ tensors.
-- [ ] Zeroed-modality inputs handled gracefully.
-- [ ] All work committed and PR merged into `dev`.
+- [x] `DCMFNet` forward pass produces $[B, 768]$ tensors.
+- [x] Zeroed-modality inputs handled gracefully.
+- [x] All work committed and PR merged into `dev`.
 
 ---
 
