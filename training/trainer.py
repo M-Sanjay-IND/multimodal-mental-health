@@ -30,7 +30,9 @@ def train_model(
     train_loader, val_loader = create_dataloaders(train_path, val_path, batch_size=batch_size)
 
     model = MultiTaskModel().to(device)
-    loss_fn = MultiTaskLoss()
+    # Class weights to handle severe class imbalance (Severe_Stress is ~3.2% of dataset)
+    alpha_cls = torch.tensor([0.6, 0.8, 1.0, 7.8], dtype=torch.float32).to(device)
+    loss_fn = MultiTaskLoss(alpha_cls=alpha_cls)
     balancer = GradNormLossBalancer().to(device)
 
     optimizer = torch.optim.AdamW(
