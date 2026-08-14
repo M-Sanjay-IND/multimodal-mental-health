@@ -39,8 +39,16 @@ def generate_synthetic_embeddings(
     v_pool_path = os.path.join(artifact_dir, "real_visual_embeddings.joblib")
     a_pool_path = os.path.join(artifact_dir, "real_acoustic_embeddings.joblib")
 
-    real_v_pools = joblib.load(v_pool_path) if os.path.exists(v_pool_path) else None
-    real_a_pools = joblib.load(a_pool_path) if os.path.exists(a_pool_path) else None
+    def _load_joblib_safely(path):
+        if os.path.exists(path) and os.path.getsize(path) > 1000:
+            try:
+                return joblib.load(path)
+            except Exception:
+                return None
+        return None
+
+    real_v_pools = _load_joblib_safely(v_pool_path)
+    real_a_pools = _load_joblib_safely(a_pool_path)
 
     if real_v_pools is not None and real_a_pools is not None:
         print("[INFO] Sampling visual and acoustic embeddings from REAL media feature pools...")

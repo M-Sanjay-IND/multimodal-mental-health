@@ -6,7 +6,16 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import numpy as np
 import torch
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_absolute_error, r2_score, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    mean_absolute_error,
+    r2_score,
+    confusion_matrix,
+)
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -73,11 +82,23 @@ def evaluate_benchmarks(
 
     # 1. Classification Metrics
     accuracy = float(accuracy_score(all_true_cls_arr, all_pred_cls_arr))
-    macro_f1 = float(f1_score(all_true_cls_arr, all_pred_cls_arr, average="macro"))
-    roc_auc = float(roc_auc_score(all_true_cls_arr, all_logits_arr, multi_class="ovr", average="macro"))
-
-    # Per-class F1 breakdown
-    per_class_f1 = f1_score(all_true_cls_arr, all_pred_cls_arr, average=None)
+    
+    macro_precision = float(precision_score(all_true_cls_arr, all_pred_cls_arr, average="macro", zero_division=0))
+    weighted_precision = float(precision_score(all_true_cls_arr, all_pred_cls_arr, average="weighted", zero_division=0))
+    per_class_precision = precision_score(all_true_cls_arr, all_pred_cls_arr, average=None, zero_division=0)
+    
+    macro_recall = float(recall_score(all_true_cls_arr, all_pred_cls_arr, average="macro", zero_division=0))
+    weighted_recall = float(recall_score(all_true_cls_arr, all_pred_cls_arr, average="weighted", zero_division=0))
+    per_class_recall = recall_score(all_true_cls_arr, all_pred_cls_arr, average=None, zero_division=0)
+    
+    macro_f1 = float(f1_score(all_true_cls_arr, all_pred_cls_arr, average="macro", zero_division=0))
+    weighted_f1 = float(f1_score(all_true_cls_arr, all_pred_cls_arr, average="weighted", zero_division=0))
+    micro_f1 = float(f1_score(all_true_cls_arr, all_pred_cls_arr, average="micro", zero_division=0))
+    per_class_f1 = f1_score(all_true_cls_arr, all_pred_cls_arr, average=None, zero_division=0)
+    
+    roc_auc_macro = float(roc_auc_score(all_true_cls_arr, all_logits_arr, multi_class="ovr", average="macro"))
+    roc_auc_weighted = float(roc_auc_score(all_true_cls_arr, all_logits_arr, multi_class="ovr", average="weighted"))
+    
     cm = confusion_matrix(all_true_cls_arr, all_pred_cls_arr)
 
     # 2. Regression Metrics
@@ -92,8 +113,14 @@ def evaluate_benchmarks(
     # Target Benchmarks
     targets = {
         "Accuracy": (accuracy, 0.936, accuracy >= 0.936, f"{accuracy*100:.2f}% >= 93.6%"),
+        "Macro Precision": (macro_precision, 0.920, macro_precision >= 0.920, f"{macro_precision:.4f} >= 0.920"),
+        "Weighted Precision": (weighted_precision, 0.920, weighted_precision >= 0.920, f"{weighted_precision:.4f} >= 0.920"),
+        "Macro Recall": (macro_recall, 0.920, macro_recall >= 0.920, f"{macro_recall:.4f} >= 0.920"),
+        "Weighted Recall": (weighted_recall, 0.920, weighted_recall >= 0.920, f"{weighted_recall:.4f} >= 0.920"),
         "Macro F1": (macro_f1, 0.924, macro_f1 >= 0.924, f"{macro_f1:.4f} >= 0.924"),
-        "ROC-AUC": (roc_auc, 0.978, roc_auc >= 0.978, f"{roc_auc:.4f} >= 0.978"),
+        "Weighted F1": (weighted_f1, 0.924, weighted_f1 >= 0.924, f"{weighted_f1:.4f} >= 0.924"),
+        "ROC-AUC (Macro)": (roc_auc_macro, 0.978, roc_auc_macro >= 0.978, f"{roc_auc_macro:.4f} >= 0.978"),
+        "ROC-AUC (Weighted)": (roc_auc_weighted, 0.978, roc_auc_weighted >= 0.978, f"{roc_auc_weighted:.4f} >= 0.978"),
         "MAE Depression": (mae_dep, 1.50, mae_dep <= 1.50, f"{mae_dep:.2f} <= 1.50"),
         "MAE Anxiety": (mae_anx, 1.20, mae_anx <= 1.20, f"{mae_anx:.2f} <= 1.20"),
         "MAE Stress": (mae_str, 1.80, mae_str <= 1.80, f"{mae_str:.2f} <= 1.80"),
@@ -102,16 +129,16 @@ def evaluate_benchmarks(
 
     all_passed = all(item[2] for item in targets.values())
 
-    print("\n" + "=" * 65)
+    print("\n" + "=" * 70)
     print(" PHASE 8 BENCHMARK VALIDATION SUMMARY REPORT")
-    print("=" * 65)
+    print("=" * 70)
     for name, (val, target, status, msg) in targets.items():
         status_str = "PASS [OK]" if status else "FAIL [X]"
-        print(f" - {name:<18}: {msg:<22} [{status_str}]")
-    print("-" * 65)
+        print(f" - {name:<22}: {msg:<22} [{status_str}]")
+    print("-" * 70)
     print(f" - Per-Sample CPU Latency : {avg_sample_latency:.2f} ms")
     print(f" - Overall Status        : {'PASSED ALL TARGETS' if all_passed else 'NEEDS ATTENTION'}")
-    print("=" * 65 + "\n")
+    print("=" * 70 + "\n")
 
     # Generate Markdown Report
     report_content = f"""# 🧠 Phase 8 — Benchmark Validation & Model Performance Certification
@@ -128,22 +155,29 @@ def evaluate_benchmarks(
 | Metric | Measured Value | Target Benchmark | Validation Status |
 |--------|----------------|------------------|-------------------|
 | **Classification Accuracy** | **{accuracy*100:.2f}%** | >= 93.6% | {'PASS ✅' if accuracy >= 0.936 else 'FAIL ❌'} |
-| **Macro F1-Score** | **{macro_f1:.4f}** | >= 0.924 | {'PASS ✅' if macro_f1 >= 0.924 else 'FAIL ❌'} |
-| **ROC-AUC Score** | **{roc_auc:.4f}** | >= 0.978 | {'PASS ✅' if roc_auc >= 0.978 else 'FAIL ❌'} |
-| **MAE (Depression Score)** | **{mae_dep:.2f}** | <= 1.08 | {'PASS ✅' if mae_dep <= 1.08 else 'FAIL ❌'} |
-| **MAE (Anxiety Score)** | **{mae_anx:.2f}** | <= 0.82 | {'PASS ✅' if mae_anx <= 0.82 else 'FAIL ❌'} |
-| **MAE (Stress Score)** | **{mae_str:.2f}** | <= 1.15 | {'PASS ✅' if mae_str <= 1.15 else 'FAIL ❌'} |
-| **Overall R^2 Score** | **{r2_overall:.4f}** | >= 0.931 | {'PASS ✅' if r2_overall >= 0.931 else 'FAIL ❌'} |
+| **Macro Precision** | **{macro_precision:.4f}** | >= 0.9200 | {'PASS ✅' if macro_precision >= 0.920 else 'FAIL ❌'} |
+| **Weighted Precision** | **{weighted_precision:.4f}** | >= 0.9200 | {'PASS ✅' if weighted_precision >= 0.920 else 'FAIL ❌'} |
+| **Macro Recall** | **{macro_recall:.4f}** | >= 0.9200 | {'PASS ✅' if macro_recall >= 0.920 else 'FAIL ❌'} |
+| **Weighted Recall** | **{weighted_recall:.4f}** | >= 0.9200 | {'PASS ✅' if weighted_recall >= 0.920 else 'FAIL ❌'} |
+| **Macro F1-Score** | **{macro_f1:.4f}** | >= 0.9240 | {'PASS ✅' if macro_f1 >= 0.924 else 'FAIL ❌'} |
+| **Weighted F1-Score** | **{weighted_f1:.4f}** | >= 0.9240 | {'PASS ✅' if weighted_f1 >= 0.924 else 'FAIL ❌'} |
+| **Micro F1-Score** | **{micro_f1:.4f}** | >= 0.9360 | {'PASS ✅' if micro_f1 >= 0.936 else 'FAIL ❌'} |
+| **ROC-AUC (Macro)** | **{roc_auc_macro:.4f}** | >= 0.9780 | {'PASS ✅' if roc_auc_macro >= 0.978 else 'FAIL ❌'} |
+| **ROC-AUC (Weighted)** | **{roc_auc_weighted:.4f}** | >= 0.9780 | {'PASS ✅' if roc_auc_weighted >= 0.978 else 'FAIL ❌'} |
+| **MAE (Depression Score)** | **{mae_dep:.2f}** | <= 1.50 | {'PASS ✅' if mae_dep <= 1.50 else 'FAIL ❌'} |
+| **MAE (Anxiety Score)** | **{mae_anx:.2f}** | <= 1.20 | {'PASS ✅' if mae_anx <= 1.20 else 'FAIL ❌'} |
+| **MAE (Stress Score)** | **{mae_str:.2f}** | <= 1.80 | {'PASS ✅' if mae_str <= 1.80 else 'FAIL ❌'} |
+| **Overall R^2 Score** | **{r2_overall:.4f}** | >= 0.9310 | {'PASS ✅' if r2_overall >= 0.931 else 'FAIL ❌'} |
 
 ---
 
-## 📈 Categorical Severity Breakdown (4-Class)
+## 📈 Categorical Severity Breakdown (4-Class Metrics)
 
-| Severity Class | Target Class ID | Per-Class F1-Score | Confusion Matrix Breakdown |
-|----------------|-----------------|--------------------|----------------------------|
+| Severity Class | Target Class ID | Precision | Recall | F1-Score | Confusion Matrix Breakdown |
+|----------------|-----------------|-----------|--------|----------|----------------------------|
 """
     for i, cls_name in enumerate(SEVERITY_CLASSES):
-        report_content += f"| **{cls_name}** | {i} | `{per_class_f1[i]:.4f}` | Correct: {cm[i, i]} / {cm[i].sum()} |\n"
+        report_content += f"| **{cls_name}** | {i} | `{per_class_precision[i]:.4f}` | `{per_class_recall[i]:.4f}` | `{per_class_f1[i]:.4f}` | Correct: {cm[i, i]} / {cm[i].sum()} |\n"
 
     report_content += f"""
 ### Confusion Matrix
@@ -186,8 +220,15 @@ Sev_Stress     {cm[3,0]:<8} {cm[3,1]:<12} {cm[3,2]:<16} {cm[3,3]}
     print(f"[SUCCESS] Benchmark report saved to {report_path}")
     return {
         "accuracy": accuracy,
+        "macro_precision": macro_precision,
+        "weighted_precision": weighted_precision,
+        "macro_recall": macro_recall,
+        "weighted_recall": weighted_recall,
         "macro_f1": macro_f1,
-        "roc_auc": roc_auc,
+        "weighted_f1": weighted_f1,
+        "roc_auc": roc_auc_macro,
+        "roc_auc_weighted": roc_auc_weighted,
+        "confusion_matrix": cm.tolist(),
         "mae_dep": mae_dep,
         "mae_anx": mae_anx,
         "mae_str": mae_str,

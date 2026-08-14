@@ -2,7 +2,16 @@ import os
 import pytest
 import numpy as np
 import torch
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, mean_absolute_error, r2_score
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    mean_absolute_error,
+    r2_score,
+    confusion_matrix,
+)
 
 from models.multi_task import MultiTaskModel
 from training.dataset import MultimodalParquetDataset
@@ -43,8 +52,15 @@ def benchmark_results():
     all_pred_cls_arr = np.array(all_pred_cls)
 
     acc = accuracy_score(all_true_cls_arr, all_pred_cls_arr)
-    f1 = f1_score(all_true_cls_arr, all_pred_cls_arr, average="macro")
+    macro_p = precision_score(all_true_cls_arr, all_pred_cls_arr, average="macro", zero_division=0)
+    weighted_p = precision_score(all_true_cls_arr, all_pred_cls_arr, average="weighted", zero_division=0)
+    macro_r = recall_score(all_true_cls_arr, all_pred_cls_arr, average="macro", zero_division=0)
+    weighted_r = recall_score(all_true_cls_arr, all_pred_cls_arr, average="weighted", zero_division=0)
+    macro_f1 = f1_score(all_true_cls_arr, all_pred_cls_arr, average="macro", zero_division=0)
+    weighted_f1 = f1_score(all_true_cls_arr, all_pred_cls_arr, average="weighted", zero_division=0)
     auc = roc_auc_score(all_true_cls_arr, all_logits_arr, multi_class="ovr", average="macro")
+    cm = confusion_matrix(all_true_cls_arr, all_pred_cls_arr)
+
     mae_dep = mean_absolute_error(all_true_reg_arr[:, 0], all_pred_reg_arr[:, 0])
     mae_anx = mean_absolute_error(all_true_reg_arr[:, 1], all_pred_reg_arr[:, 1])
     mae_str = mean_absolute_error(all_true_reg_arr[:, 2], all_pred_reg_arr[:, 2])
@@ -52,8 +68,14 @@ def benchmark_results():
 
     return {
         "accuracy": acc,
-        "macro_f1": f1,
+        "macro_precision": macro_p,
+        "weighted_precision": weighted_p,
+        "macro_recall": macro_r,
+        "weighted_recall": weighted_r,
+        "macro_f1": macro_f1,
+        "weighted_f1": weighted_f1,
         "roc_auc": auc,
+        "confusion_matrix": cm,
         "mae_dep": mae_dep,
         "mae_anx": mae_anx,
         "mae_str": mae_str,
@@ -65,12 +87,25 @@ def test_classification_accuracy_target(benchmark_results):
     assert benchmark_results["accuracy"] >= 0.936, f"Accuracy {benchmark_results['accuracy']:.4f} < 0.936 target!"
 
 
-def test_macro_f1_target(benchmark_results):
+def test_precision_recall_targets(benchmark_results):
+    assert benchmark_results["macro_precision"] >= 0.920, f"Macro precision {benchmark_results['macro_precision']:.4f} < 0.920 target!"
+    assert benchmark_results["weighted_precision"] >= 0.920, f"Weighted precision {benchmark_results['weighted_precision']:.4f} < 0.920 target!"
+    assert benchmark_results["macro_recall"] >= 0.920, f"Macro recall {benchmark_results['macro_recall']:.4f} < 0.920 target!"
+    assert benchmark_results["weighted_recall"] >= 0.920, f"Weighted recall {benchmark_results['weighted_recall']:.4f} < 0.920 target!"
+
+
+def test_f1_score_targets(benchmark_results):
     assert benchmark_results["macro_f1"] >= 0.924, f"Macro F1 {benchmark_results['macro_f1']:.4f} < 0.924 target!"
+    assert benchmark_results["weighted_f1"] >= 0.924, f"Weighted F1 {benchmark_results['weighted_f1']:.4f} < 0.924 target!"
 
 
 def test_roc_auc_target(benchmark_results):
     assert benchmark_results["roc_auc"] >= 0.978, f"ROC-AUC {benchmark_results['roc_auc']:.4f} < 0.978 target!"
+
+
+def test_confusion_matrix_shape(benchmark_results):
+    cm = benchmark_results["confusion_matrix"]
+    assert cm.shape == (4, 4), f"Confusion matrix shape {cm.shape} != (4, 4)"
 
 
 def test_regression_mae_targets(benchmark_results):
@@ -81,3 +116,4 @@ def test_regression_mae_targets(benchmark_results):
 
 def test_r2_overall_target(benchmark_results):
     assert benchmark_results["r2_overall"] >= 0.931, f"R2 overall {benchmark_results['r2_overall']:.4f} < 0.931 target!"
+
