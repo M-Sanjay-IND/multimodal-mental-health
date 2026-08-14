@@ -13,6 +13,8 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
     mean_absolute_error,
+    mean_squared_error,
+    explained_variance_score,
     r2_score,
     confusion_matrix,
 )
@@ -101,10 +103,27 @@ def evaluate_benchmarks(
     
     cm = confusion_matrix(all_true_cls_arr, all_pred_cls_arr)
 
-    # 2. Regression Metrics
+    # 2. Regression Metrics (MAE, MSE, RMSE, Explained Variance Score)
     mae_dep = float(mean_absolute_error(all_true_reg_arr[:, 0], all_pred_reg_arr[:, 0]))
     mae_anx = float(mean_absolute_error(all_true_reg_arr[:, 1], all_pred_reg_arr[:, 1]))
     mae_str = float(mean_absolute_error(all_true_reg_arr[:, 2], all_pred_reg_arr[:, 2]))
+    mae_overall = float(mean_absolute_error(all_true_reg_arr, all_pred_reg_arr))
+
+    mse_dep = float(mean_squared_error(all_true_reg_arr[:, 0], all_pred_reg_arr[:, 0]))
+    mse_anx = float(mean_squared_error(all_true_reg_arr[:, 1], all_pred_reg_arr[:, 1]))
+    mse_str = float(mean_squared_error(all_true_reg_arr[:, 2], all_pred_reg_arr[:, 2]))
+    mse_overall = float(mean_squared_error(all_true_reg_arr, all_pred_reg_arr))
+
+    rmse_dep = float(np.sqrt(mse_dep))
+    rmse_anx = float(np.sqrt(mse_anx))
+    rmse_str = float(np.sqrt(mse_str))
+    rmse_overall = float(np.sqrt(mse_overall))
+
+    evs_dep = float(explained_variance_score(all_true_reg_arr[:, 0], all_pred_reg_arr[:, 0]))
+    evs_anx = float(explained_variance_score(all_true_reg_arr[:, 1], all_pred_reg_arr[:, 1]))
+    evs_str = float(explained_variance_score(all_true_reg_arr[:, 2], all_pred_reg_arr[:, 2]))
+    evs_overall = float(explained_variance_score(all_true_reg_arr, all_pred_reg_arr))
+
     r2_overall = float(r2_score(all_true_reg_arr, all_pred_reg_arr))
 
     # Latency metric
@@ -124,6 +143,9 @@ def evaluate_benchmarks(
         "MAE Depression": (mae_dep, 10.00, mae_dep <= 10.00, f"{mae_dep:.2f} <= 10.00"),
         "MAE Anxiety": (mae_anx, 9.00, mae_anx <= 9.00, f"{mae_anx:.2f} <= 9.00"),
         "MAE Stress": (mae_str, 12.00, mae_str <= 12.00, f"{mae_str:.2f} <= 12.00"),
+        "MSE Overall": (mse_overall, 100.00, mse_overall <= 100.00, f"{mse_overall:.2f} <= 100.00"),
+        "RMSE Overall": (rmse_overall, 10.00, rmse_overall <= 10.00, f"{rmse_overall:.2f} <= 10.00"),
+        "Explained Variance": (evs_overall, 0.150, evs_overall >= 0.150, f"{evs_overall:.4f} >= 0.150"),
         "Overall R2": (r2_overall, 0.150, r2_overall >= 0.150, f"{r2_overall:.4f} >= 0.150"),
     }
 
@@ -150,7 +172,7 @@ def evaluate_benchmarks(
 
 ---
 
-## 📊 Summary Benchmark Performance Table
+## 📊 Classification Benchmark Performance Table
 
 | Metric | Measured Value | Target Benchmark | Validation Status |
 |--------|----------------|------------------|-------------------|
@@ -164,10 +186,6 @@ def evaluate_benchmarks(
 | **Micro F1-Score** | **{micro_f1:.4f}** | >= 0.8500 | {'PASS ✅' if micro_f1 >= 0.850 else 'FAIL ❌'} |
 | **ROC-AUC (Macro)** | **{roc_auc_macro:.4f}** | >= 0.9500 | {'PASS ✅' if roc_auc_macro >= 0.950 else 'FAIL ❌'} |
 | **ROC-AUC (Weighted)** | **{roc_auc_weighted:.4f}** | >= 0.9500 | {'PASS ✅' if roc_auc_weighted >= 0.950 else 'FAIL ❌'} |
-| **MAE (Depression Score)** | **{mae_dep:.2f}** | <= 10.00 | {'PASS ✅' if mae_dep <= 10.00 else 'FAIL ❌'} |
-| **MAE (Anxiety Score)** | **{mae_anx:.2f}** | <= 9.00 | {'PASS ✅' if mae_anx <= 9.00 else 'FAIL ❌'} |
-| **MAE (Stress Score)** | **{mae_str:.2f}** | <= 12.00 | {'PASS ✅' if mae_str <= 12.00 else 'FAIL ❌'} |
-| **Overall R^2 Score** | **{r2_overall:.4f}** | >= 0.1500 | {'PASS ✅' if r2_overall >= 0.150 else 'FAIL ❌'} |
 
 ---
 
@@ -189,6 +207,17 @@ Mild_Stress    {cm[1,0]:<8} {cm[1,1]:<12} {cm[1,2]:<16} {cm[1,3]}
 Mod_Stress     {cm[2,0]:<8} {cm[2,1]:<12} {cm[2,2]:<16} {cm[2,3]}
 Sev_Stress     {cm[3,0]:<8} {cm[3,1]:<12} {cm[3,2]:<16} {cm[3,3]}
 ```
+
+---
+
+## 📈 Continuous Symptom Regression Breakdown (MAE, MSE, RMSE & Explained Variance)
+
+| Symptom Subscale | MAE | MSE | RMSE | Explained Variance | R^2 Score |
+|------------------|-----|-----|------|-------------------|-----------|
+| **Depression Score (/34)** | `{mae_dep:.2f}` | `{mse_dep:.2f}` | `{rmse_dep:.2f}` | `{evs_dep:.4f}` | `{r2_score(all_true_reg_arr[:, 0], all_pred_reg_arr[:, 0]):.4f}` |
+| **Anxiety Score (/24)** | `{mae_anx:.2f}` | `{mse_anx:.2f}` | `{rmse_anx:.2f}` | `{evs_anx:.4f}` | `{r2_score(all_true_reg_arr[:, 1], all_pred_reg_arr[:, 1]):.4f}` |
+| **Stress Score (/39)** | `{mae_str:.2f}` | `{mse_str:.2f}` | `{rmse_str:.2f}` | `{evs_str:.4f}` | `{r2_score(all_true_reg_arr[:, 2], all_pred_reg_arr[:, 2]):.4f}` |
+| **Overall Average** | **`{mae_overall:.2f}`** | **`{mse_overall:.2f}`** | **`{rmse_overall:.2f}`** | **`{evs_overall:.4f}`** | **`{r2_overall:.4f}`** |
 
 ---
 
@@ -232,6 +261,19 @@ Sev_Stress     {cm[3,0]:<8} {cm[3,1]:<12} {cm[3,2]:<16} {cm[3,3]}
         "mae_dep": mae_dep,
         "mae_anx": mae_anx,
         "mae_str": mae_str,
+        "mae_overall": mae_overall,
+        "mse_dep": mse_dep,
+        "mse_anx": mse_anx,
+        "mse_str": mse_str,
+        "mse_overall": mse_overall,
+        "rmse_dep": rmse_dep,
+        "rmse_anx": rmse_anx,
+        "rmse_str": rmse_str,
+        "rmse_overall": rmse_overall,
+        "evs_dep": evs_dep,
+        "evs_anx": evs_anx,
+        "evs_str": evs_str,
+        "evs_overall": evs_overall,
         "r2_overall": r2_overall,
         "all_passed": all_passed,
     }
@@ -239,3 +281,4 @@ Sev_Stress     {cm[3,0]:<8} {cm[3,1]:<12} {cm[3,2]:<16} {cm[3,3]}
 
 if __name__ == "__main__":
     evaluate_benchmarks()
+

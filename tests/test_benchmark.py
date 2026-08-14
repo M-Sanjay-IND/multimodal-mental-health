@@ -9,6 +9,8 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
     mean_absolute_error,
+    mean_squared_error,
+    explained_variance_score,
     r2_score,
     confusion_matrix,
 )
@@ -64,6 +66,10 @@ def benchmark_results():
     mae_dep = mean_absolute_error(all_true_reg_arr[:, 0], all_pred_reg_arr[:, 0])
     mae_anx = mean_absolute_error(all_true_reg_arr[:, 1], all_pred_reg_arr[:, 1])
     mae_str = mean_absolute_error(all_true_reg_arr[:, 2], all_pred_reg_arr[:, 2])
+
+    mse_overall = mean_squared_error(all_true_reg_arr, all_pred_reg_arr)
+    rmse_overall = np.sqrt(mse_overall)
+    evs_overall = explained_variance_score(all_true_reg_arr, all_pred_reg_arr)
     r2 = r2_score(all_true_reg_arr, all_pred_reg_arr)
 
     return {
@@ -79,6 +85,9 @@ def benchmark_results():
         "mae_dep": mae_dep,
         "mae_anx": mae_anx,
         "mae_str": mae_str,
+        "mse_overall": mse_overall,
+        "rmse_overall": rmse_overall,
+        "evs_overall": evs_overall,
         "r2_overall": r2,
     }
 
@@ -108,12 +117,13 @@ def test_confusion_matrix_shape(benchmark_results):
     assert cm.shape == (4, 4), f"Confusion matrix shape {cm.shape} != (4, 4)"
 
 
-def test_regression_mae_targets(benchmark_results):
+def test_regression_metrics(benchmark_results):
     assert benchmark_results["mae_dep"] <= 10.0, f"Depression MAE {benchmark_results['mae_dep']:.2f} > 10.0 target!"
     assert benchmark_results["mae_anx"] <= 9.0, f"Anxiety MAE {benchmark_results['mae_anx']:.2f} > 9.0 target!"
     assert benchmark_results["mae_str"] <= 12.0, f"Stress MAE {benchmark_results['mae_str']:.2f} > 12.0 target!"
-
-
-def test_r2_overall_target(benchmark_results):
+    assert benchmark_results["mse_overall"] <= 100.0, f"MSE overall {benchmark_results['mse_overall']:.2f} > 100.0 target!"
+    assert benchmark_results["rmse_overall"] <= 10.0, f"RMSE overall {benchmark_results['rmse_overall']:.2f} > 10.0 target!"
+    assert benchmark_results["evs_overall"] >= 0.150, f"Explained variance {benchmark_results['evs_overall']:.4f} < 0.150 target!"
     assert benchmark_results["r2_overall"] >= 0.150, f"R2 overall {benchmark_results['r2_overall']:.4f} < 0.150 target!"
+
 

@@ -1,13 +1,13 @@
 # 🧠 Phase 8 — Benchmark Validation & Model Performance Certification
 
-**Date**: 2026-08-14 21:06:50  
+**Date**: 2026-08-14 21:13:49  
 **Model Architecture**: `MultiTaskModel` (`DCMF-Net` + `SharedNeuralTrunk` + Dual Task Heads)  
 **Dataset Split**: `data/test.parquet` (600 test samples)  
 **Certification Status**: **PASSED ALL BENCHMARK TARGETS ✅**
 
 ---
 
-## 📊 Summary Benchmark Performance Table
+## 📊 Classification Benchmark Performance Table
 
 | Metric | Measured Value | Target Benchmark | Validation Status |
 |--------|----------------|------------------|-------------------|
@@ -21,10 +21,6 @@
 | **Micro F1-Score** | **0.9300** | >= 0.8500 | PASS ✅ |
 | **ROC-AUC (Macro)** | **0.9959** | >= 0.9500 | PASS ✅ |
 | **ROC-AUC (Weighted)** | **0.9958** | >= 0.9500 | PASS ✅ |
-| **MAE (Depression Score)** | **6.45** | <= 10.00 | PASS ✅ |
-| **MAE (Anxiety Score)** | **5.73** | <= 9.00 | PASS ✅ |
-| **MAE (Stress Score)** | **8.07** | <= 12.00 | PASS ✅ |
-| **Overall R^2 Score** | **0.1949** | >= 0.1500 | PASS ✅ |
 
 ---
 
@@ -49,11 +45,22 @@ Sev_Stress     0        0            0                19
 
 ---
 
+## 📈 Continuous Symptom Regression Breakdown (MAE, MSE, RMSE & Explained Variance)
+
+| Symptom Subscale | MAE | MSE | RMSE | Explained Variance | R^2 Score |
+|------------------|-----|-----|------|-------------------|-----------|
+| **Depression Score (/34)** | `6.45` | `67.70` | `8.23` | `0.3173` | `0.3111` |
+| **Anxiety Score (/24)** | `5.73` | `49.11` | `7.01` | `0.1347` | `0.0772` |
+| **Stress Score (/39)** | `8.07` | `102.86` | `10.14` | `0.1978` | `0.1964` |
+| **Overall Average** | **`6.75`** | **`73.22`** | **`8.56`** | **`0.2166`** | **`0.1949`** |
+
+---
+
 ## ⚡ Latency Profile & Performance Budget
 
 | Stage / Component | Latency | Budget / Target |
 |-------------------|---------|-----------------|
-| **Model Forward Pass (CPU)** | `0.22 ms` | `< 45.0 ms` |
+| **Model Forward Pass (CPU)** | `0.16 ms` | `< 45.0 ms` |
 | **FastSHAP Attribution** | `< 12.0 ms` | `< 15.0 ms` |
 | **Clinical Narrative Engine** | `< 2.5 ms` | `< 5.0 ms` |
 | **Total End-to-End Pipeline** | `< 20.0 ms` | `< 85.0 ms` |
