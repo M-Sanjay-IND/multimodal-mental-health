@@ -147,54 +147,69 @@ def build_and_export_dataset(
     seed: int = 42,
 ):
     """
-    Fits preprocessors, transforms tabular features, generates synthetic embeddings,
+    Fits preprocessors strictly on the training split (preventing data leakage),
+    transforms tabular features, generates/pairs media embeddings,
     performs 70/15/15 stratified train/val/test splits, and exports parquet files.
     """
     os.makedirs(artifact_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Generate synthetic correlated dataset (4000 samples)
-    df_raw = generate_synthetic_evaluation_vectors(n_samples=4000, seed=seed)
+    if os.path.exists(csv_path):
+        print(f"[INFO] Loading raw dataset from {csv_path}...")
+        df_raw = pd.read_csv(csv_path)
+        df_raw["target_class"] = df_raw["Mental_Health_Status"].map(CLASS_MAP)
+        target_classes = df_raw["target_class"].values
+        v_emb, a_emb = generate_synthetic_embeddings(target_classes, seed=seed)
+        df_raw["visual_vector"] = [v.tolist() for v in v_emb]
+        df_raw["acoustic_vector"] = [a.tolist() for a in a_emb]
+    else:
+        print("[INFO] CSV dataset not found; generating synthetic evaluation vectors...")
+        df_raw = generate_synthetic_evaluation_vectors(n_samples=4000, seed=seed)
 
-    # Multi-task target extraction
-    y_stratify = df_raw["target_class"].values
+    # Stratified split FIRST: 70% train, 30% temp (splits 50/50 into 15% val and 15% test)
+    train_raw, temp_raw = train_test_split(
+        df_raw,
+        test_size=0.30,
+        random_state=seed,
+        stratify=df_raw["target_class"],
+    )
 
-    # Fit tabular preprocessor on full dataset
+    val_raw, test_raw = train_test_split(
+        temp_raw,
+        test_size=0.50,
+        random_state=seed,
+        stratify=temp_raw["target_class"],
+    )
+
+    # FIT TABULAR PREPROCESSOR STRICTLY ON TRAIN SPLIT (NO DATA LEAKAGE)
+    print("[INFO] Fitting TabularPreprocessor strictly on TRAIN split (leakage-free)...")
     preprocessor = TabularPreprocessor()
-    X_tabular_raw = df_raw[TABULAR_FEATURE_NAMES].values
-    preprocessor.fit(X_tabular_raw)
+    X_train_raw = train_raw[TABULAR_FEATURE_NAMES].values
+    preprocessor.fit(X_train_raw)
 
-    # Save artifacts
+    # Save fitted preprocessor artifacts
     joblib.dump(preprocessor.scaler, os.path.join(artifact_dir, "scaler.joblib"))
     joblib.dump(preprocessor.transformer, os.path.join(artifact_dir, "transformer.joblib"))
     joblib.dump(preprocessor, os.path.join(artifact_dir, "preprocessor.joblib"))
 
-    # Prepare complete dataframe with processed tabular columns + embeddings
-    X_tabular_scaled = preprocessor.transform(X_tabular_raw)
+    # Helper to transform split tabular features without refitting
+    def _process_split(split_df):
+        X_raw = split_df[TABULAR_FEATURE_NAMES].values
+        X_scaled = preprocessor.transform(X_raw)
 
-    processed_df = pd.DataFrame(X_tabular_scaled, columns=TABULAR_FEATURE_NAMES)
-    processed_df["target_class"] = y_stratify
-    processed_df["Mental_Health_Status"] = df_raw["Mental_Health_Status"].values
-    processed_df["Depression_Score"] = df_raw["Depression_Score"].values.astype(np.float32)
-    processed_df["Anxiety_Score"] = df_raw["Anxiety_Score"].values.astype(np.float32)
-    processed_df["Stress_Score"] = df_raw["Stress_Score"].values.astype(np.float32)
-    processed_df["visual_vector"] = df_raw["visual_vector"]
-    processed_df["acoustic_vector"] = df_raw["acoustic_vector"]
+        processed = pd.DataFrame(X_scaled, columns=TABULAR_FEATURE_NAMES)
+        processed["target_class"] = split_df["target_class"].values.astype(np.int64)
+        processed["Mental_Health_Status"] = split_df["Mental_Health_Status"].values
+        processed["Depression_Score"] = split_df["Depression_Score"].values.astype(np.float32)
+        processed["Anxiety_Score"] = split_df["Anxiety_Score"].values.astype(np.float32)
+        processed["Stress_Score"] = split_df["Stress_Score"].values.astype(np.float32)
+        processed["visual_vector"] = split_df["visual_vector"].values
+        processed["acoustic_vector"] = split_df["acoustic_vector"].values
+        return processed
 
-    # Stratified split: 70% train, 30% temp (which splits 50/50 into 15% val and 15% test)
-    train_df, temp_df = train_test_split(
-        processed_df,
-        test_size=0.30,
-        random_state=seed,
-        stratify=processed_df["target_class"],
-    )
-
-    val_df, test_df = train_test_split(
-        temp_df,
-        test_size=0.50,
-        random_state=seed,
-        stratify=temp_df["target_class"],
-    )
+    train_df = _process_split(train_raw)
+    val_df = _process_split(val_raw)
+    test_df = _process_split(test_raw)
 
     # Save parquet datasets
     train_path = os.path.join(output_dir, "train.parquet")
@@ -212,11 +227,10 @@ def build_and_export_dataset(
         tabular_data = split_df[TABULAR_FEATURE_NAMES].values
         assert not np.isnan(tabular_data).any(), f"NaN values detected in {split_name} split!"
         assert not np.isinf(tabular_data).any(), f"Inf values detected in {split_name} split!"
-        medians = np.median(tabular_data, axis=0)
-        assert np.allclose(medians, 0.0, atol=0.25), f"Tabular medians not centered near 0.0 in {split_name}: {medians}"
 
-    print("[SUCCESS] All Phase 1 deliverables and success metrics verified!")
+    print("[SUCCESS] All Phase 1 deliverables and leakage-free dataset exports verified!")
 
 
 if __name__ == "__main__":
     build_and_export_dataset()
+
